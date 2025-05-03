@@ -4,7 +4,6 @@
 
 # タグ: チュートリアル, エレクトロニック, クール, VRChat, C.Y.A.N
 
-```markdown
 # ------------------------------------------
 # 【Lyricsフィールド入力推奨】
 # ------------------------------------------
@@ -63,8 +62,8 @@ Instructive Electronic, Minimal Synth, Calm Female Vocal, Slightly Robotic Tone,
 # - 辛辣さが不快になっていないか？
 # - ボーカルのトーンはイメージ通りか？ (例: もっと機械的に？ → Robotic Vocals タグ強化)
 # - 音楽スタイルは「ポップではない」感じになっているか？
-```
 
+---
 
 ## 楽曲2: 改変ラボラトリー - デッキ構築＆カード改変BGM
 
@@ -72,7 +71,6 @@ Instructive Electronic, Minimal Synth, Calm Female Vocal, Slightly Robotic Tone,
 
 # タグ: 集中, Lo-fi, エレクトロニカ, デッキ構築, 改変
 
-```markdown
 # ------------------------------------------
 # 【Lyricsフィールド入力推奨】
 # ------------------------------------------
@@ -124,7 +122,6 @@ Focus Music, Chillwave, [Lo-fi Hip Hop Beat], Downtempo Electronica, Creative At
 # - 集中できる雰囲気が出ているか？
 # - 「改変」のデジタル感が表現されているか？
 # - Spoken WordやVocoderは邪魔になっていないか？
-```
 
 ---
 
@@ -132,9 +129,8 @@ Focus Music, Chillwave, [Lo-fi Hip Hop Beat], Downtempo Electronica, Creative At
 
 # 曲名: 虚無か栄光か - ラストJoinへの選択
 
-**# タグ: ドラマティック, オーケストラ, 決戦葛藤, Join
+# タグ: ドラマティック, オーケストラ, 決戦, 葛藤, Join
 
-```markdown
 # ------------------------------------------
 # 【Lyricsフィールド入力推奨】
 # ------------------------------------------
@@ -199,4 +195,3 @@ Dramatic Soundtrack, Emotional Orchestral Pop, [Building Intensity], [Climactic]
 # - 葛藤と決断のドラマ性が表現されているか？
 # - 静と動のダイナミクスは効果的だったか？
 # - ボーカルやオーケストラの感情表現は十分か？
-```
