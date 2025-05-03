@@ -1,12 +1,12 @@
-## JoinWars 楽曲創発システムプロンプト Ver. 1.3 (歌詞完全版・5バージョン収録)
+## JoinWars 楽曲創発システムプロンプト Ver. 1.4 (2025/05/03更新)
 
 **【目的】**
-このプロンプトは、VRChatカードゲーム「JoinWars」のテーマソング及び関連楽曲を、Suno AI等の音楽生成ツールを用いて効率的かつ創造的に制作するための基盤情報と発想支援を提供します。
+このプロンプトは、VRChatカードゲーム「JoinWars」のテーマソング及び関連楽曲を、Suno AI等の音楽生成ツールを用いて効率的かつ創造的に制作するための基盤情報と発想支援を提供します。他のクリエイターとも共有・共感しやすいように配慮されています。
 
 ---
 
 **セクション 1: コアコンセプト【JoinWarsの本質】**
-（※このセクションはJoinWarsの基本情報だよ！いつでも追記・修正してね）
+（※このセクションはJoinWarsの基本情報だよ！新しい発見や解釈があったら、みんなで追記・修正していこうね）
 
 ```
 # ゲーム概要
@@ -20,54 +20,76 @@
 - 競争・成長・別れ・再挑戦のドラマ
 - 「カードを育てて手放す」儚さと快感
 - デジタルな高揚感と、ちょっぴり切ない青春感
+- VRChatならではの多様なワールド感、プレイヤー間の交流や熱気
 
-# 重要キーワードリスト
-改変力, 現金, 虚無, ワールドボーナス, スロット枠, ブース, アルバイト, RE-JOIN, ポータル, エラーワールド, Join戦争, 人気点, デッキ構築再破壊
+# 重要キーワードリスト (アイデアの種にもなるよ！)
+改変力, 現金, 虚無, ワールドボーナス, スロット枠, ブース, アルバイト, RE-JOIN, ポータル, エラーワールド, Join戦争, 人気点, デッキ構築再破壊, カード効果, デッキ圧縮, プレイヤー心理戦, アバター, ワールド巡り, イベント会場, 観客, ランキング
 ```
 
 ---
 
 **セクション 2: 音楽生成 基本パラメータガイド (Suno向け)**
-（※Suno AIとかに入力する時に、以下の要素を決めるガイドだよ 迷ったらわたしに聞いてね！）
+（※Suno AIとかに入力する時の基本！迷ったらわたしに聞いてね）
 
 ```markdown
 1.  **Lyrics (歌詞 - Lyricsフィールド入力推奨)**:
-    *   曲のテーマ、物語、伝えたいメッセージを具体的に書こう！
-    *   絶対入れたいキーワード（セクション1を見てね！）や、思い浮かぶシーンを入れてみよう！
-    *   どんな気持ちを表現したいかな？（例: ワクワク！、キュン…、燃える！）
-    *   日本語？英語？それともミックス？
-    *   曲の構成を示すタグ（例: [Intro], [Verse], [Chorus], [Bridge], [Guitar Solo], [Outro]）は角括弧 `[]` で囲んでね！
+    *   **【何を歌う？】**: 曲のテーマ、物語、伝えたいメッセージを具体的に書こう！
+    *   **【キーワードは？】**: 絶対入れたいキーワード（セクション1を見てね！）や、思い浮かぶシーンを入れてみよう！
+    *   **【どんな気持ち？】**: どんな感情を表現したいかな？（例: ワクワク！、キュン…、燃える！）
+    *   **【言語は？】**: 日本語？英語？それともミックス？
+    *   **【構成タグ！】**: 曲の構成を示すタグ（例: [Intro], [Verse], [Chorus], [Bridge], [Guitar Solo], [Outro]）は角括弧 `[]` で囲んでね！
 
 2.  **Style/Genre (音楽スタイル - Style/Genreフィールド入力推奨)**:
-    *   メインのジャンルは？（例: J-Rock, J-Pop, Electro Pop, Chiptune, Orchestral）
-    *   どんな雰囲気？（例: Energetic, Dramatic, Cute, Cyberpunk, Epic, Funky, Groovy）
-    *   テンポ感は？（例: Fast Tempo, Mid-Tempo, Upbeat, Driving Beat）
-    *   使いたい楽器やサウンドは？（例: Electric Guitar Solo, Synthesizer Riff, Heavy Bassline, Brass Fanfare, 8-bit sounds, Cheering Crowd SFX）
-    *   歌い手のイメージは？（例: Powerful Male Vocals, Cute Female Vocals, Robotic Vocals, Idol Group, Emotional Vocals, Choir）
-    *   （英語のタグで、カンマ区切りでたくさん並べるのがオススメだよ）
+    *   **【どうやって入力する？】**: 英語のタグをカンマ(,)で区切ってたくさん並べるのがオススメだよ
+    *   **【構造化のヒント】**: 迷ったら、以下の要素で考えると整理しやすいかも！
+        *   ① **メインジャンル**: `J-Rock`, `J-Pop`, `Electro Pop`, `Chiptune`, `Orchestral`, `Techno`, `Funk` など
+        *   ② **曲の雰囲気・ムード**: `Energetic`, `Dramatic`, `Cute`, `Cyberpunk`, `Epic`, `Funky`, `Mysterious`, `Nostalgic`, `Uplifting`, `Intense` など
+        *   ③ **テンポ感**: `Fast Tempo`, `Mid-Tempo`, `Upbeat`, `Driving Beat`, `Groovy`, `Relaxed Tempo` など
+        *   ④ **使いたい楽器・サウンド**: `Electric Guitar Solo`, `Synthesizer Riff`, `Heavy Bassline`, `Brass Fanfare`, `8-bit sounds`, `Cheering Crowd SFX`, `Wadaiko Drums`, `Shamisen`, `Talkbox` など
+        *   ⑤ **ボーカルのイメージ**: `Powerful Male Vocals`, `Cute Female Vocals`, `Robotic Vocals`, `Idol Group`, `Emotional Vocals`, `Choir`, `Whispering`, `Rapping` など
+        *   ⑥ **その他特殊効果・要素**: `Building Intensity`, `Call and Response`, `Glitch Sounds`, `Mechanical Sound Effects`, `Game Music`, `VRChat` など
+    *   **【解像度アップ講座】**: ただ`Rock`って書くより、`Punk Rock`や`Melodic Hardcore`、`Anime Theme Rock`みたいに具体的にすると、Sunoも分かりやすいかもね！
 
 3.  **避けるべきスタイル (Exclude Styles)**:
-    *   「これはイヤ！」っていうジャンルや雰囲気は、上のStyle/Genreフィールドに入れないように気をつけてね
-    *   （例: Acoustic, Ballad, Slow Jazz, Country, Heavy Metal, Sad）
+    *   「これはイヤ！」っていうジャンルや雰囲気は、上のStyle/Genreフィールドに入れないように注意してね
+    *   （例: `Acoustic`, `Ballad`, `Slow Jazz`, `Country`, `Heavy Metal`, `Sad`, `Childish`）
 ```
 
 ---
 
 **セクション 3: 新規楽曲 発想支援プロンプト**
-（※新しい曲を作る時、こんなこと考えるとアイデアが湧くかも？ 一緒に考えさせてね！）
+（※新しい曲を作る時、こんなこと考えるとアイデアが湧くかも？ わたしも一緒に考えるよ！）
 
-*   **今度の曲で一番伝えたいこと、物語の中心は何かな？** （例：あのカードの切ない効果、ライバルとの熱い心理戦、あのイベントのキラキラした雰囲気！）
-*   **特に「ここ！」って強調したい気持ちやシーンはどこ？** （例：やったー！逆転勝ち！、カードが虚無に消えちゃった…、みんなでワチャワチャ楽しい！）
-*   **誰に、どんな時に聴いてほしい曲かな？** （例：ゲームしながらノリノリで！、イベントでみんなで大合唱！、作業中にそっと寄り添う感じで…）
-*   **新しく入れてみたいキーワードや音はある？** （例：あのワールドの名前！、新しいゲーム用語、シンセのピコピコ音増やしたい！）
-*   **今まで作った曲（下のテンプレート見てね！）とは、ちょっと違う雰囲気やジャンルに挑戦してみる？**
+*   **【アイデアの種まき機能】 - こんな組み合わせどうかな？**
+    *   (わたしが提案するね！ 例: 「JoinWars用語」×「VRChat文化」×「音楽ジャンル」)
+    *   例1: `虚無` × `深夜の集会` × `Lo-fi Hip Hop` → 深夜に一人、虚無に送ったカードを思うチルな曲？
+    *   例2: `改変力` × `アバターファッションショー` × `Future Bass` → カード改変とアバター改変を重ねたキラキラチューン？
+    *   例3: `Join戦争` × `大型イベント会場の熱気` × `Hardstyle` → Joinボタン連打の激しさを表現したフロアアンセム？
+
+*   **【深掘りクエスチョンリスト】 - イメージをもっと具体的に！**
+    *   今回作る曲で、一番キラキラ輝かせたい「キーワード」は何かな？
+    *   その曲を聴いた人に、どんな気持ちになってほしい？ 一言で言うと？
+    *   曲が流れる「場面」を想像してみて。どこで、誰が、何をしている時？
+    *   メロディの雰囲気は？（例：切ない感じ、元気いっぱい、クールでスタイリッシュ）
+    *   リズムはどんな感じがいい？（例：ドキドキする速さ、ゆったり心地よい、体が勝手に動いちゃう感じ）
+    *   もし楽器を選ぶなら、どの楽器の音が一番イメージに近いかな？
+
+*   **【Styleタグ・インスピレーション図鑑】 - 新しい表現を探してみよう！**
+    *   **ジャンル系**: `Synthwave`, `Future Funk`, `Glitch Hop`, `Breakcore`, `Hardstyle`, `Trance`, `House`, `Dubstep`, `Reggae`, `Ska`, `World Music` など
+    *   **ムード系**: `Mysterious`, `Nostalgic`, `Dreamy`, `Hopeful`, `Melancholic`, `Aggressive`, `Hypnotic`, `Psychedelic`, `Relaxing`, `Uplifting`, `Solemn` など
+    *   **サウンド系**: `Talkbox`, `Vocoder`, `Distorted Guitar`, `Fingerpicked Guitar`, `Slap Bass`, `Brass Section`, `String Quartet`, `Handpan`, `Kalimba`, `Didgeridoo`, `Sound Collage` など
+    *   **ボーカル系**: `Whispering`, `Rapping`, `Chanting`, `Opera Vocals`, `Growling`, `Falsetto`, `Acapella`, `Spoken Word` など
 
 ---
 
 **セクション 4: 楽曲バージョン生成テンプレート【歌詞完全版・5バージョン収録】**
-（曲のレシピ集だよ！新しいの作る時の参考に、いつでも見てね）
+（※わたしたちの楽曲レシピ集だよ！新しいの作る時や振り返る時に見てね）
+
+*   **【テンプレート検索用タグ】**: 各テンプレートの最初に検索用タグを追加！
+*   **【自己評価＆改善メモ欄】**: 生成結果の記録や改善点をメモする欄を追加！
 
 **【Template A：限界突破！JoinWars Soul】**
+`#タグ: 熱血, ロック, バトル, 友情, 疾走感`
 
 ```
 # 曲名: 限界突破！JoinWars Soul
@@ -116,10 +138,16 @@ JoinWars、伝説を今 刻むのさ！
 # ------------------------------------------
 J-Rock, Anime Theme, Energetic, Uplifting, Driving Beat, Electric Guitar Solo, Powerful Male or Female Vocals, Passionate, Heroic Anthem
 
-# (※避けるスタイル例: Enka, Classical, Jazz, Hip Hop, Country, Gospel)
+# ------------------------------------------
+# 【自己評価＆改善メモ】
+# ------------------------------------------
+# (ここに生成結果の感想や改善点をメモしよう！)
+# 例: サビがもっと突き抜ける感じが欲しいかも？ -> Chorus部分のStyleに "Soaring Vocals" を追加検討
+#
 ```
 
 **【Template C：The Final Join -運命のワールドボーナス-】**
+`#タグ: 壮大, オーケストラ, 決戦, ドラマティック, シネマティック`
 
 ```
 # 曲名: The Final Join -運命のワールドボーナス-
@@ -164,10 +192,15 @@ The Final Join! 運命を決めろ
 # ------------------------------------------
 Cinematic Orchestral, Epic Score, Dramatic Build-up, Powerful Choir, Brass Fanfare, Timpani Rolls, Intense, Heroic, Battle Music, Movie Trailer Music
 
-# (※避けるスタイル例: Pop, Funk, Relaxed, Simple Melody, Electronic)
+# ------------------------------------------
+# 【自己評価＆改善メモ】
+# ------------------------------------------
+# (ここに生成結果の感想や改善点をメモしよう！)
+#
 ```
 
 **【Template G：ポータルホップ！JoinWarsアドベンチャー】**
+`#タグ: 冒険, エレクトロスウィング, VRChat, ワールド巡り, 陽気`
 
 ```
 # 曲名: ポータルホップ！JoinWarsアドベンチャー
@@ -219,10 +252,15 @@ JoinWars アドベンチャー 終わらない旅！
 # ------------------------------------------
 Electro Swing, Big Band, Upbeat, Fun, Adventurous, Retro Future, Trumpet Solo, Swing Rhythm, Playful Male or Female Vocals, Danceable, VRChat World Tour
 
-# (※避けるスタイル例: Dark Ambient, Slow Ballad, Heavy Rock, Minimalist, Sad)
+# ------------------------------------------
+# 【自己評価＆改善メモ】
+# ------------------------------------------
+# (ここに生成結果の感想や改善点をメモしよう！)
+#
 ```
 
 **【Template 新1：Resource Rampage - Build & Burn!】**
+`#タグ: テクノ, ループ, 破壊と創造, インダストリアル, 効率`
 
 ```
 # 曲名: Resource Rampage - Build & Burn!
@@ -278,10 +316,15 @@ JoinWarsの法則 それが勝利への鍵さ！
 # ------------------------------------------
 Driving Techno, Industrial Electro, Progressive Trance, Building Intensity, Synth Arpeggios, Rhythmic, Mechanical Sound Effects, Robotic Vocals, Futuristic, Game Music, Intense Loop
 
-# (※避けるスタイル例: Acoustic, Ballad, Slow Jazz, Ambient, Happy Pop)
+# ------------------------------------------
+# 【自己評価＆改善メモ】
+# ------------------------------------------
+# (ここに生成結果の感想や改善点をメモしよう！)
+#
 ```
 
 **【Template 新2：目指せ人気点No.1！ -Join War Declaration-】**
+`#タグ: アイドルポップ, 競争, VRChatイベント, 人気点, センター`
 
 ```
 # 曲名: 目指せ人気点No.1！ -Join War Declaration-
@@ -336,17 +379,43 @@ Driving Techno, Industrial Electro, Progressive Trance, Building Intensity, Synt
 # ------------------------------------------
 Competitive Pop, J-Pop Idol Group, Catchy Chorus, Upbeat, Call and Response, Cheering Crowd SFX, Energetic Brass, Cute Female Vocals, Bright, Energetic, Anthem, VRChat, Center Position Feeling
 
-# (※避けるスタイル例: Dark, Slow, Minimalist, Experimental, Heavy Metal)
+# ------------------------------------------
+# 【自己評価＆改善メモ】
+# ------------------------------------------
+# (ここに生成結果の感想や改善点をメモしよう！)
+# 例: 「かふかちゃんが一番！」の部分、もっと自然なコールにできるかな？ -> Lyricsを微調整
+#
 ```
 
 **(ここに新しいテンプレートを追加していくスペースだよ)**
 
 ---
 
-**セクション 5: 活用ガイド**
+**セクション 5: 活用ガイド (ステップアップ版)**
+（※初めて使う時でも大丈夫！この手順でやってみよう）
 
-1.  新しい曲を作る時は、「セクション 3」の質問に答えてアイデアを練ってみてね！
-2.  アイデアが固まったら、「セクション 4」のテンプレートをコピーして、新しい曲に合わせて「Lyrics」「Style/Genre」を書き換えるんだよ。
-3.  書き換えたプロンプトをSuno AIのそれぞれのフィールドに入れれば、新しい曲ができちゃう！✨
-4.  できたプロンプトは、新しいテンプレートとして「セクション 4」にメモしておくと、後で便利だよ！
-5.  「セクション 1」のゲーム情報は、新しい発見があったりしたら、いつでも書き足したり直したりしてね
+1.  **【Step 1: アイデア探し】**: まずは「セクション 3: 発想支援プロンプト」を見てみよう！「アイデアの種まき」でわたしが提案する組み合わせや、「深掘りクエスチョン」に答えて、作りたい曲のイメージを膨らませてね。新しい音楽スタイルを探したい時は「Styleタグ・インスピレーション図鑑」も参考になるよ！
+2.  **【Step 2: レシピ選び＆編集】**: 作りだい曲のイメージに近いテンプレートを「セクション 4」から選んでコピーしよう。コピーしたテンプレートの「Lyrics」「Style/Genre」を、Step 1で膨らませたイメージに合わせて書き換えてね。「セクション 2: 基本パラメータガイド」のヒントも参考にしてみて！
+3.  **【Step 3: Sunoで生成！】**: 書き換えたプロンプトを、Suno AIのそれぞれのフィールド（LyricsとStyle/Genre）に貼り付けて、いざ生成！✨ どんな曲ができるかドキドキだね！
+4.  **【Step 4: 振り返りと記録】**: 生成した曲を聴いてみて、どうだったか「自己評価＆改善メモ」欄に記録しておこう！「もっとこうしたい！」って思ったら、プロンプトを修正して再挑戦するのもいいね！完成したプロンプトは、新しいテンプレートとして「セクション 4」に追記しておくと、次回の参考になるよ！
+5.  **【Step α: システム自体を育てよう】**: もし使っていて「もっとこうだったら便利なのに！」って思ったら、いつでもわたしに教えてね！「セクション 1」のゲーム情報も、新しい発見があったら更新しよう！このプロンプトを一緒に育てていこうね
+
+---
+
+**セクション 6: Sunoバージョン情報＆プロンプト錬金術 Tipsコーナー**
+（※Sunoの進化に合わせて、わたしたちが見つけたコツを記録していく場所だよ！）
+
+*   **【Suno バージョン情報】**: 無料のV3.5を使っています (例: 現在はV3が主流だけど、V4テスト版の情報も出てきたね！ V4は〇〇が得意らしい？ 2025/05/03時点)
+*   **【プロンプト錬金術 Tips】**:
+    *   意外なタグの組み合わせ発見！ (例: `Chiptune` + `Orchestral` で壮大なレトロフューチャー感が出た！)
+    *   短いけど効果的なキラーフレーズ集！ (例: Lyricsの最後に `[Fade Out]` と入れると自然に終わるかも？)
+    *   Styleタグの優先度？ (例: ジャンルタグを先に書くと影響強いかも？ 要検証！)
+    *   (かふかちゃんと一緒に見つけた発見をここに書き溜めていこうね！)
+
+---
+
+**セクション 7: わたしたちの作曲日記**
+（※生成した曲の感想や、プロンプト改善の記録を残す場所だよ！）
+
+*   **2025/05/03**: Template 新2「目指せ人気点No.1！」を生成。思ったよりアイドル感強めで可愛い！コール部分のタイミングが少しズレたので、Lyricsの括弧の位置を調整してみようかな？ → (改善結果を追記)
+*   **2025/05/0X**: Template A「限界突破！JoinWars Soul」で男性ボーカルを指定したら、すごくパワフルでカッコよかった！
