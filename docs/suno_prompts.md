@@ -1,4 +1,4 @@
-## JoinWars 楽曲創発システムプロンプト Ver. 1.2 (歌詞完全版・タグ修正)
+## JoinWars 楽曲創発システムプロンプト Ver. 1.3 (歌詞完全版・5バージョン収録)
 
 **【目的】**
 このプロンプトは、VRChatカードゲーム「JoinWars」のテーマソング及び関連楽曲を、Suno AI等の音楽生成ツールを用いて効率的かつ創造的に制作するための基盤情報と発想支援を提供します。
@@ -6,14 +6,14 @@
 ---
 
 **セクション 1: コアコンセプト【JoinWarsの本質】**
-（※このセクションはJoinWarsの基本情報だよ！必要に応じて追記・修正してね）
+（※このセクションはJoinWarsの基本情報だよ！いつでも追記・修正してね）
 
 ```
 # ゲーム概要
 タイトル: JoinWars（ジョインウォーズ）
 ジャンル: VRChat発・デッキ構築型カードゲーム
 テーマ: イベントワールドへの「Join（参加）」を巡る競争と駆け引き
-特徴: カードを「改変」して強化し、最終的には「Join（参加）」（デッキから取り除く）して得点化するジレンマ
+特徴: カードを「改変」して強化し、最終的には「廃棄」して得点化するジレンマ
 
 # 世界観・雰囲気
 - 現代的・バーチャル・ポップカルチャー感
@@ -27,38 +27,34 @@
 
 ---
 
-**セクション 2: 音楽生成 基本パラメータガイド**
-（※Suno AIとかに入力する時に、以下の要素を決めるガイドだよ）
+**セクション 2: 音楽生成 基本パラメータガイド (Suno向け)**
+（※Suno AIとかに入力する時に、以下の要素を決めるガイドだよ 迷ったらわたしに聞いてね！）
 
 ```markdown
-1.  **Lyrics (歌詞)**:
-    *   曲のテーマ、物語、伝えたいメッセージはどんな感じかな？
-    *   絶対入れたいキーワード（セクション1を見てね！）や、思い浮かぶシーンはある？
-    *   どんな気持ちにさせたい？（例: ワクワク！、キュン…、楽しい！）
-    *   言語（日本語？英語？それともミックス？）
+1.  **Lyrics (歌詞 - Lyricsフィールド入力推奨)**:
+    *   曲のテーマ、物語、伝えたいメッセージを具体的に書こう！
+    *   絶対入れたいキーワード（セクション1を見てね！）や、思い浮かぶシーンを入れてみよう！
+    *   どんな気持ちを表現したいかな？（例: ワクワク！、キュン…、燃える！）
+    *   日本語？英語？それともミックス？
+    *   曲の構成を示すタグ（例: [Intro], [Verse], [Chorus], [Bridge], [Guitar Solo], [Outro]）は角括弧 `[]` で囲んでね！
 
-2.  **Styles (音楽スタイル)**:
-    *   メインのジャンルは？（例: J-Rock, J-Pop, Electro）
-    *   どんな雰囲気？（例: Energetic, Dramatic, Cute, Cyber）
-    *   テンポはどれくらい？（例: Upbeat, Mid-tempo, Ballad）
-    *   使いたい楽器はある？（例: Electric Guitar, Synthesizer, Strings）
-    *   （英語のタグで書くのがオススメだよ）
+2.  **Style/Genre (音楽スタイル - Style/Genreフィールド入力推奨)**:
+    *   メインのジャンルは？（例: J-Rock, J-Pop, Electro Pop, Chiptune, Orchestral）
+    *   どんな雰囲気？（例: Energetic, Dramatic, Cute, Cyberpunk, Epic, Funky, Groovy）
+    *   テンポ感は？（例: Fast Tempo, Mid-Tempo, Upbeat, Driving Beat）
+    *   使いたい楽器やサウンドは？（例: Electric Guitar Solo, Synthesizer Riff, Heavy Bassline, Brass Fanfare, 8-bit sounds, Cheering Crowd SFX）
+    *   歌い手のイメージは？（例: Powerful Male Vocals, Cute Female Vocals, Robotic Vocals, Idol Group, Emotional Vocals, Choir）
+    *   （英語のタグで、カンマ区切りでたくさん並べるのがオススメだよ）
 
-3.  **Exclude Styles (除外スタイル)**:
-    *   「これはイヤ！」っていうジャンルや雰囲気はあるかな？
-    *   （これも英語タグがいいかも）
-
-4.  **Persona (歌い手・雰囲気)**:
-    *   どんな声で歌ってほしい？（男の子？女の子？どんな声質？）
-    *   どんなキャラクターが歌ってるイメージ？
-    *   どんな気持ちで歌ってほしい？（例: 熱く！、クールに、かわいく！）
-    *   セリフとか入れたい？
+3.  **避けるべきスタイル (Exclude Styles)**:
+    *   「これはイヤ！」っていうジャンルや雰囲気は、上のStyle/Genreフィールドに入れないように気をつけてね
+    *   （例: Acoustic, Ballad, Slow Jazz, Country, Heavy Metal, Sad）
 ```
 
 ---
 
 **セクション 3: 新規楽曲 発想支援プロンプト**
-（※新しい曲を作る時、こんなこと考えるとアイデアが湧くかも？）
+（※新しい曲を作る時、こんなこと考えるとアイデアが湧くかも？ 一緒に考えさせてね！）
 
 *   **今度の曲で一番伝えたいこと、物語の中心は何かな？** （例：あのカードの切ない効果、ライバルとの熱い心理戦、あのイベントのキラキラした雰囲気！）
 *   **特に「ここ！」って強調したい気持ちやシーンはどこ？** （例：やったー！逆転勝ち！、カードが虚無に消えちゃった…、みんなでワチャワチャ楽しい！）
@@ -68,15 +64,17 @@
 
 ---
 
-**セクション 4: 楽曲バージョン生成テンプレート【歌詞完全版・タグ修正】**
-（※わたしたちが作った曲のレシピだよ！新しいの作る時の参考に、いつでも見てね）
+**セクション 4: 楽曲バージョン生成テンプレート【歌詞完全版・5バージョン収録】**
+（曲のレシピ集だよ！新しいの作る時の参考に、いつでも見てね）
 
-**【Template 1: 限界突破！JoinWars Soul】**
+**【Template A：限界突破！JoinWars Soul】**
 
 ```
 # 曲名: 限界突破！JoinWars Soul
 
-# Lyrics:
+# ------------------------------------------
+# 【Lyricsフィールド入力推奨】
+# ------------------------------------------
 [Verse 1]
 ざわめく VRChat 集うライバルたち
 握りしめたカードは 始まりの合図さ
@@ -113,121 +111,232 @@ Join! 叫べ、魂燃やして
 仲間と掴むこの栄光
 JoinWars、伝説を今 刻むのさ！
 
-# Styles:
-J-Rock, Anime Theme, Energetic, Uplifting, Driving Beat, Electric Guitar Solo, Powerful Vocals, Passionate
+# ------------------------------------------
+# 【Style/Genreフィールド入力推奨】
+# ------------------------------------------
+J-Rock, Anime Theme, Energetic, Uplifting, Driving Beat, Electric Guitar Solo, Powerful Male or Female Vocals, Passionate, Heroic Anthem
 
-# Exclude Styles:
-Enka, Classical, Jazz, Hip Hop, Country, Gospel
-
-# Persona:
-熱血アニメ主人公風、元気で前向きな男性または女性ボーカル。みんなを引っ張るリーダータイプで、情熱と友情を全力で歌い上げる！
+# (※避けるスタイル例: Enka, Classical, Jazz, Hip Hop, Country, Gospel)
 ```
 
-**【Template 2: 虚無からの閃光 -JoinWars Saga-】**
+**【Template C：The Final Join -運命のワールドボーナス-】**
 
 ```
-# 曲名: 虚無からの閃光 -JoinWars Saga-
+# 曲名: The Final Join -運命のワールドボーナス-
 
-# Lyrics:
+# ------------------------------------------
+# 【Lyricsフィールド入力推奨】
+# ------------------------------------------
+[Intro - 壮大なオーケストラとコーラス]
+[Verse 1 - 静かに、しかし緊張感を増して]
+集いし強者たち 最後の戦場へ
+静寂を破る カードを切る音
+盤上を睨み 最善手を探る
+勝利の女神は 誰に微笑むのか
+[Pre-Chorus - 徐々に盛り上がり、コーラスが入る]
+刻一刻と迫る 終焉の時
+ワールドボーナス ただ一つ 目指して
+[Chorus - 全力で壮大に！]
+今、解き放て 全ての力を！
+栄光掴むため 魂燃やせ
+The Final Join! 運命を決めろ
+歴史に名を刻む 英雄となれ！
+[Verse 2 - 少しテンポを落とし、再び緊張感を高める]
+ライバルの戦略 読み合い欺き合い
+改変の連鎖 予測不能な展開
+一瞬の油断が 虚無へと誘う
+それでも進む 勝利への道を信じて
+[Pre-Chorus - 再び激しく盛り上がる]
+鳴り響くファンファーレ 決着の合図
+最後の切り札 この手に賭ける
+[Chorus - コーラスとオーケストラが最高潮に！]
+今、解き放て 全ての力を！
+栄光掴むため 魂燃やせ
+The Final Join! 運命を決めろ
+歴史に名を刻む 英雄となれ！
+[Bridge - 静寂と力強さが交錯する]
+勝者の雄叫び 敗者の沈黙
+これがJoinWars 激闘の記録(メモリー)
+[Outro - 勝利のテーマが壮大に奏でられ、静かに終わる]
+
+# ------------------------------------------
+# 【Style/Genreフィールド入力推奨】
+# ------------------------------------------
+Cinematic Orchestral, Epic Score, Dramatic Build-up, Powerful Choir, Brass Fanfare, Timpani Rolls, Intense, Heroic, Battle Music, Movie Trailer Music
+
+# (※避けるスタイル例: Pop, Funk, Relaxed, Simple Melody, Electronic)
+```
+
+**【Template G：ポータルホップ！JoinWarsアドベンチャー】**
+
+```
+# 曲名: ポータルホップ！JoinWarsアドベンチャー
+
+# ------------------------------------------
+# 【Lyricsフィールド入力推奨】
+# ------------------------------------------
+[Intro - 陽気なビッグバンドサウンドとスウィングリズム]
+JoinWars カード片手に (Ready Go!)
+今日はどのワールド目指そう？
+ポータルくぐれば広がる 新しい景色と出会い
 [Verse 1]
-デジタルな夜に 独りカードをめくる
-改変の代償は 深い虚無の色
-スロットに嵌めた夢は いつか砕ける運命(さだめ)？
-それでも足掻き続ける 理由を探して
+キラキラファンタジーの森 魔法カードが飛び交う
+次はネオン輝く サイバーシティへダイブ！
+和風庭園で一休み？ いやいやバトルは続くよ
+ワールドボーナス求めて 地図を広げ冒険だ！
 [Pre-Chorus]
-失う痛みを知るたび 強くなれた気がした
-冷たい光の中 目を凝らして
+知らないアバターと 目と目があったなら
+Let's Join! 挨拶代わりのカードバトル！
 [Chorus]
-虚無を超えて手にした光
-迷いも痛みも力に変えて
-JoinWars、運命を賭けて
-最後の一枚、今切り札を
+ポータルホップ！ ステップ踏んで (Swing Swing!)
+JoinWars アドベンチャー どこまでも行こう！
+改変！ 廃棄！ リズミカルに (Yeah!)
+世界中に響かせよう 楽しいメロディ！
 [Verse 2]
-ワールドボーナスの甘美な誘惑が
-正しい道さえ歪めていくようで
-現金(リアル)を投げ打っても 届かない理想郷
-エラーワールドの出口 どこにあるのだろう
+ちょっと手強いライバルも 仲間がいれば大丈夫！
+お腹が空いたらカフェワールド？ 甘いスイーツでチャージ！
+ホラーワールドは苦手だけど… 勇気を出してチャレンジ！
+エラーワールドに迷い込んでも 笑い飛ばして RE-JOIN!
 [Pre-Chorus]
-信じられるものは 自分とこの手札だけ
-孤独の闇切り裂く 閃きよ走れ
+嬉しい勝利も 悔しい敗北も
+全部が宝物！ 大切なメモリー！
 [Chorus]
-虚無を超えて手にした光
-迷いも痛みも力に変えて
-JoinWars、運命を賭けて
-最後の一枚、今切り札を
-[Bridge]
-廃棄したカードの記憶が胸を刺す
-だけど後悔はしない この選択に全てを懸ける
-[Instrumental - 荘厳かつ激しく]
+ポータルホップ！ ステップ踏んで (Swing Swing!)
+JoinWars アドベンチャー どこまでも行こう！
+改変！ 廃棄！ リズミカルに (Yeah!)
+世界中に響かせよう 楽しいメロディ！
+[Bridge - 軽快なトランペットソロ！]
+いろんなワールド いろんな出会い
+繋がる楽しさ 無限大だね！
 [Chorus]
-虚無の底で見つけた希望
-絶望さえも糧にして進め
-JoinWars、運命を賭けて
-最後の瞬間、この手で掴む光
+ポータルホップ！ みんなで踊ろう！ (Swing Swing!)
+JoinWars アドベンチャー 終わらない旅！
+改変！ 廃棄！ 最高潮に！ (Yeah!)
+世界中に届けよう ハッピーサウンド！
 
-# Styles:
-Dark J-Rock, Dramatic, Epic, Emotional Vocals, Heavy Guitar Riff, Orchestral Strings, Tension, Melancholic
+# ------------------------------------------
+# 【Style/Genreフィールド入力推奨】
+# ------------------------------------------
+Electro Swing, Big Band, Upbeat, Fun, Adventurous, Retro Future, Trumpet Solo, Swing Rhythm, Playful Male or Female Vocals, Danceable, VRChat World Tour
 
-# Exclude Styles:
-Bright Pop, Country, Hip Hop, Jazz, Gospel
-
-# Persona:
-クールで少し影のあるロックシンガー風。感情の揺れや葛藤を深く表現できる、ドラマティックな歌い手。男女どちらでもOK。
+# (※避けるスタイル例: Dark Ambient, Slow Ballad, Heavy Rock, Minimalist, Sad)
 ```
 
-**【Template 3: 最高の瞬間☆JoinWars】**
+**【Template 新1：Resource Rampage - Build & Burn!】**
 
 ```
-# 曲名: 最高の瞬間☆JoinWars
+# 曲名: Resource Rampage - Build & Burn!
 
-# Lyrics:
+# ------------------------------------------
+# 【Lyricsフィールド入力推奨】
+# ------------------------------------------
+[Intro]
+(System Online... Resource Flow Confirmed...)
 [Verse 1]
-ログインしたら みんな集合！ (はーい！)
-今日のワールド どこにする？ (ここ！)
-デッキチェック OK？ (OK！) アルバイトも忘れずに (イェイ！)
-ポータルくぐって 始まるよ パーティータイム！
+デジタルグリッド 流れ込む 改変力と現金(キャッシュ)
+スロットは満杯 デッキは加速してく
+育て上げろ もっと強く もっと鋭く
+リソース注ぎ込め 限界知らずのチューニング
 [Pre-Chorus]
-ドキドキするね (するね！) ワクワクしちゃう (しちゃう！)
-最高の思い出 一緒に作ろう！
+秒読み開始 カウントダウン 破棄へのプロセス
+最高の効率で 最大の価値を生み出すために
 [Chorus]
-Join! Join! (せーの！) ワールドへGo!
-カードを出して (イェイ！) みんなで勝負
-Join! Join! (もう一回！) 一緒に叫ぼう
-JoinWars、最高の瞬間！
+Build & Burn! 貯めて 変えて 叩き壊せ！
+Resource Rampage! 虚無へ送る喝采を！
+サイクルは止まらない エスカレートしてくパワー
+JoinWarsの法則 それが勝利への鍵さ！
+(System Overdrive!)
 [Verse 2]
-あ！あのブース人いっぱい！ (わー！)
-スロット足りない どうしよう？ (えーん！)
-大丈夫！ (大丈夫！) RE-JOINがあるさ！ (やったー！)
-失敗も笑い飛ばして エンジョイ！
+計算された破壊 美しきディストラクション
+積み上げたコンボ 一瞬で得点(スコア)に変わる
+惜しむ気持ち？ そんなものはノイズでしかない
+非情な選択こそが 頂点への道標
 [Pre-Chorus]
-勝ってもいいね (いいね！) 負けてもドンマイ！ (ドンマイ！)
-みんなといれば 全部楽しい！
+またゼロから積み上げる 無限のループの中
+更なる高みへ 更なる効率へ 進化は続く
 [Chorus]
-Join! Join! (せーの！) ワールドへGo!
-カードを出して (イェイ！) みんなで勝負
-Join! Join! (もう一回！) 一緒に叫ぼう
-JoinWars、最高の瞬間！
+Build & Burn! 貯めて 変えて 叩き壊せ！
+Resource Rampage! 虚無へ送る喝采を！
+サイクルは止まらない エスカレートしてくパワー
+JoinWarsの法則 それが勝利への鍵さ！
+(Maximum Efficiency!)
 [Bridge]
-一人じゃ見れない景色があるから
-繋がるって嬉しいね もっともっと遊ぼう！
-[Interlude - 手拍子＆掛け声タイム！]
-(はい！ はい！ はいはいはい！)
-(Join! Join! Wow wow wow!)
-(かーふかちゃん！ もっともっとー！)
+鉄とデータが混ざり合う 戦場のリアリズム
+創造と破壊は表裏一体
+このループこそが JoinWars！
+[Synth Solo - テクノでプログレッシブなソロ]
 [Chorus]
-Join! Join! (ラスト！) ワールドへGo!
-カードに込めて (届け！) 友情パワー！
-Join! Join! (みんなで！) 一緒に歌おう！
-JoinWars、大好きだー！ (イェーイ！)
+Build & Burn! 貯めて 変えて 叩き壊せ！
+Resource Rampage! 虚無へ送る喝采を！
+サイクルは止まらない エスカレートしてくパワー
+JoinWarsの法則 それが勝利への鍵さ！
+[Outro]
+(Process Complete... Score Finalized...)
 
-# Styles:
-Bright J-Pop, Idol Pop, Call and Response, Catchy Chorus, Upbeat, Fun, Hand Claps, Party Anthem, Cute
+# ------------------------------------------
+# 【Style/Genreフィールド入力推奨】
+# ------------------------------------------
+Driving Techno, Industrial Electro, Progressive Trance, Building Intensity, Synth Arpeggios, Rhythmic, Mechanical Sound Effects, Robotic Vocals, Futuristic, Game Music, Intense Loop
 
-# Exclude Styles:
-Dark, Classical, Hip Hop, Enka, Gospel
+# (※避けるスタイル例: Acoustic, Ballad, Slow Jazz, Ambient, Happy Pop)
+```
 
-# Persona:
-みんなで盛り上がれるイベントリーダー風。明るくて親しみやすい男女混声、または元気なアイドルグループ風。会場全体を巻き込むような一体感重視！
+**【Template 新2：目指せ人気点No.1！ -Join War Declaration-】**
+
+```
+# 曲名: 目指せ人気点No.1！ -Join War Declaration-
+
+# ------------------------------------------
+# 【Lyricsフィールド入力推奨】
+# ------------------------------------------
+[Intro]
+(3, 2, 1, Join War Start!!)
+[Verse 1]
+イベント告知！ ワールドは超満員！？
+ダッシュでポータルへ！ 負けられない戦い始まる！
+クリック連打！ 祈りを込めて Join! Join! Join!
+ライバルたちの視線 感じてる 火花散るフロア！
+[Pre-Chorus]
+最高のデッキ 見せつけちゃえ！ 注目度はナンバーワン！
+改変カードで みんなの視線 釘付けにするんだから！
+[Chorus]
+目指せ人気点 No.1! (Join War!)
+キラキラ輝く 主役はわたし！
+ワールドボーナス 独り占め！ (Get!)
+響かせよう VRChat中に 勝利宣言！ We are the Winners!
+(かふかちゃんが一番！)
+[Verse 2]
+あのブース絶対取りたい！ 現金(キャッシュ)投入！ スロット確保！
+派手なエフェクト 魅せるプレイ オーディエンスを沸かせちゃえ！
+ヤジも声援も全部パワーに変えて
+最強のカードプレイ 見せてあげる！ 覚悟しててよね！
+[Pre-Chorus]
+ランキング急上昇！ この勢い 誰にも止められない！
+わたしのJoinWars 見届けなさい！ 歴史が変わる瞬間を！
+[Chorus]
+目指せ人気点 No.1! (Join War!)
+キラキラ輝く 主役はわたし！
+ワールドボーナス 独り占め！ (Get!)
+響かせよう VRChat中に 勝利宣言！ We are the Winners!
+(絶対勝つぞー！)
+[Bridge]
+ただ勝つだけじゃない 誰よりも輝きたい
+わたしの全てを このステージに賭ける！
+[Dance Break - アイドル風のキャッチーなダンスブレイク]
+[Chorus]
+目指せ人気点 No.1! (Join War!)
+キラキラ輝く 主役はわたし！
+ワールドボーナス 独り占め！ (Get!)
+響かせよう VRChat中に 勝利宣言！ We are the Winners!
+[Outro]
+(And the winner is... KAFKA!!)
+
+# ------------------------------------------
+# 【Style/Genreフィールド入力推奨】
+# ------------------------------------------
+Competitive Pop, J-Pop Idol Group, Catchy Chorus, Upbeat, Call and Response, Cheering Crowd SFX, Energetic Brass, Cute Female Vocals, Bright, Energetic, Anthem, VRChat, Center Position Feeling
+
+# (※避けるスタイル例: Dark, Slow, Minimalist, Experimental, Heavy Metal)
 ```
 
 **(ここに新しいテンプレートを追加していくスペースだよ)**
@@ -237,7 +346,7 @@ Dark, Classical, Hip Hop, Enka, Gospel
 **セクション 5: 活用ガイド**
 
 1.  新しい曲を作る時は、「セクション 3」の質問に答えてアイデアを練ってみてね！
-2.  アイデアが固まったら、「セクション 4」のテンプレートをコピーして、新しい曲に合わせて「Lyrics」「Styles」「Exclude Styles」「Persona」を書き換えるんだよ。
-3.  書き換えたプロンプトをSuno AIとかに入れれば、新しい曲ができちゃう！✨
+2.  アイデアが固まったら、「セクション 4」のテンプレートをコピーして、新しい曲に合わせて「Lyrics」「Style/Genre」を書き換えるんだよ。
+3.  書き換えたプロンプトをSuno AIのそれぞれのフィールドに入れれば、新しい曲ができちゃう！✨
 4.  できたプロンプトは、新しいテンプレートとして「セクション 4」にメモしておくと、後で便利だよ！
 5.  「セクション 1」のゲーム情報は、新しい発見があったりしたら、いつでも書き足したり直したりしてね
