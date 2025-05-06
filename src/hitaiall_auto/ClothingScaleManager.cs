@@ -1,11 +1,11 @@
-#if UNITY_EDITOR // このスクリプト全体がUnityエディタでのみコンパイルされるようにする
+#if UNITY_EDITOR // このスクript全体がUnityエディタでのみコンパイルされるようにする
 
 using UnityEngine;
 using UnityEditor;
-using System.IO;
+using System.IO; // Pathクラスのために必要 (ScaleSyncProEditor側で使うため)
 using System.Collections.Generic;
 using System.Text;
-using System.Linq; // Linq を使うために追加
+using System.Linq;
 
 // --- MA関連の using は #if で囲む ---
 #if MODULAR_AVATAR
@@ -16,72 +16,78 @@ using nadena.dev.modular_avatar.core;
 using VRC.SDK3.Avatars.Components;
 #endif
 
-// --- データ構造定義 (V3) ---
+// --- データ構造定義 ---
 [System.Serializable]
-public class ClothingScaleDataV3
+public class ScaleSyncData
 {
-    public string clothingName;      // 衣装オブジェクトの名前
-    public string targetAvatarName;  // アバターオブジェクトの名前
-    public float scaleValue;         // 抽出したスケール値 (X軸)
+    public string clothingName;
+    public string targetAvatarName;
+    public float scaleValue;
+
+    public ScaleSyncData(string clothing, string avatar, float scale)
+    {
+        clothingName = clothing;
+        targetAvatarName = avatar;
+        scaleValue = scale;
+    }
 }
 
 [System.Serializable]
-public class CharacterScaleDatabaseV3
+public class ScaleSyncDatabase
 {
-    public List<ClothingScaleDataV3> scaleEntries = new List<ClothingScaleDataV3>();
+    public List<ScaleSyncData> scaleEntries = new List<ScaleSyncData>();
 }
 
 
-// --- メインの管理ツールウィンドウ (V3) ---
-public class ClothingScaleManagerV3 : EditorWindow
+// --- メインのエディタウィンドウクラス ---
+public class ScaleSyncProEditor : EditorWindow
 {
     // --- 定数 ---
-    private const string DB_FILE_PATH = "Assets/ScaleData/scale_database_v3.json";
-    private const string MENU_SCRIPT_PATH = "Assets/Editor/ClothScaleAdjusterV3.cs";
-    private const string WINDOW_TITLE = "衣装スケール管理 V3";
-    private const string MENU_ROOT_PATH = "GameObject/Apply Clothing Scale V3"; // メニューのルートパス
+    private const string PRODUCT_NAME = "ScaleSync Pro";
+    private const string DATABASE_FILENAME = "ScaleSyncPro_Database.json";
+    private const string GENERATED_MENU_SCRIPT_FILENAME = "ScaleSyncPro_GeneratedMenu.cs";
+    private const string DATABASE_DIRECTORY = "Assets/ScaleSyncProData";
+    private const string MENU_ROOT_PATH_IN_GENERATED_SCRIPT = "GameObject/" + PRODUCT_NAME + "/Apply Saved Scale";
 
-    // --- MA利用可能フラグ (コンパイル時に決定) ---
+    // Pathクラスを使うのはこちらのスクリプト内のみなので、static readonlyで定義
+    private static readonly string DatabasePath = Path.Combine(DATABASE_DIRECTORY, DATABASE_FILENAME);
+    private static readonly string GeneratedMenuScriptPath = Path.Combine("Assets", "Editor", GENERATED_MENU_SCRIPT_FILENAME);
+    // ★ 生成されるスクリプト内で使うクラス名を定数化 (固定文字列として)
+    private static readonly string GeneratedMenuScriptClassName = "ScaleSyncPro_GeneratedMenu";
+
+
 #if MODULAR_AVATAR
-    private const bool MA_AVAILABLE = true;
+    private const bool IS_MA_AVAILABLE = true;
 #else
-    private const bool MA_AVAILABLE = false;
+    private const bool IS_MA_AVAILABLE = false;
 #endif
 
-    // --- タブ定義 ---
     private enum Tab { Setup, Extract, Generate }
     private Tab currentTab = Tab.Setup;
-
-    // --- セットアップタブ用変数 ---
-    private GameObject setupAvatarObject;
-    private GameObject setupClothingObject;
-    private string selectedClothingNameForSetup = "";
-    private string selectedTargetAvatarNameForSetup = "";
-
-    // --- スケール抽出タブ用変数 ---
-    private GameObject extractSourceClothingObject;
-    private GameObject extractClothingRefObject;
-    private GameObject extractTargetAvatarRefObject;
-
-    // --- 共通変数 ---
-    private CharacterScaleDatabaseV3 scaleDatabase = null;
     private Vector2 scrollPosition;
 
-    // --- メニューからウィンドウを開く ---
-    [MenuItem("Tools/" + WINDOW_TITLE)]
+    private GameObject avatarForSetup;
+    private GameObject clothingForSetup;
+    private ScaleSyncData selectedDataForSetup;
+
+    private GameObject sourceClothingObject;
+    private GameObject clothingRefObject;
+    private GameObject targetAvatarRefObject;
+
+    private ScaleSyncDatabase scaleDatabase;
+
+    [MenuItem("Tools/" + PRODUCT_NAME)]
     public static void ShowWindow()
     {
-        GetWindow<ClothingScaleManagerV3>(WINDOW_TITLE);
+        GetWindow<ScaleSyncProEditor>(PRODUCT_NAME);
     }
 
-    // --- 初期化 ---
-    void OnEnable()
+    private void OnEnable()
     {
-        LoadScaleDatabase();
+        LoadDatabase();
     }
 
-    // --- GUI描画 ---
-    void OnGUI()
+    private void OnGUI()
     {
         GUILayout.Space(10);
         DrawTabs();
@@ -89,409 +95,424 @@ public class ClothingScaleManagerV3 : EditorWindow
 
         switch (currentTab)
         {
-            case Tab.Setup:
-                DrawSetupTab();
-                break;
-            case Tab.Extract:
-                DrawExtractTab();
-                break;
-            case Tab.Generate:
-                DrawGenerateTab();
-                break;
+            case Tab.Setup: DrawSetupTab(); break;
+            case Tab.Extract: DrawExtractTab(); break;
+            case Tab.Generate: DrawGenerateTab(); break;
         }
 
-        if (!MA_AVAILABLE && currentTab == Tab.Setup)
+        if (!IS_MA_AVAILABLE && currentTab == Tab.Setup)
         {
-             EditorGUILayout.HelpBox("Modular Avatar がプロジェクトに見つからないか、認識されていません。\n(Scripting Define Symbols に 'MODULAR_AVATAR' が必要かもしれません)\nMA連携機能は無効になります。", MessageType.Warning);
+             EditorGUILayout.HelpBox(
+                "Modular Avatar がプロジェクトにインポートされていないか、正しく認識されていません。\n" +
+                "(Scripting Define Symbols に 'MODULAR_AVATAR' が設定されているか確認してください)\n" +
+                "Modular Avatar 連携機能は現在無効です。",
+                MessageType.Warning);
         }
     }
 
-    // タブ描画
     private void DrawTabs()
     {
         EditorGUILayout.BeginHorizontal();
         currentTab = GUILayout.Toggle(currentTab == Tab.Setup, "改変セットアップ", EditorStyles.toolbarButton) ? Tab.Setup : currentTab;
         currentTab = GUILayout.Toggle(currentTab == Tab.Extract, "スケール抽出", EditorStyles.toolbarButton) ? Tab.Extract : currentTab;
-        currentTab = GUILayout.Toggle(currentTab == Tab.Generate, "メニュー生成", EditorStyles.toolbarButton) ? Tab.Generate : currentTab;
+        currentTab = GUILayout.Toggle(currentTab == Tab.Generate, "GameObjectメニュー生成", EditorStyles.toolbarButton) ? Tab.Generate : currentTab;
         EditorGUILayout.EndHorizontal();
     }
 
-    // --- 「改変セットアップ」タブ ---
-    void DrawSetupTab()
+    private void DrawSetupTab()
     {
         GUILayout.Label("非対応衣装 改変セットアップ", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
-            "1. アバターと衣装のルートオブジェクトを下の欄にドラッグ＆ドロップ。\n" +
-            "2. 適用したい保存済みスケールデータをリストから選択。\n" +
-            "3. 「スケール適用＆基本セットアップ実行」ボタンをクリック。\n" +
-            (MA_AVAILABLE ? "(Modular Avatar 連携が有効です)" : "(注意: Modular Avatar が認識されていません)"), MessageType.Info);
+            "1. アバターと衣装のルートオブジェクトを下の欄にドラッグ＆ドロップします。\n" +
+            "2. 適用したい保存済みスケールデータをリストから選択します。\n" +
+            "3. 「実行」ボタンをクリックすると、スケール適用と基本的なMA設定が行われます。\n" + // 衣装オンオフメニューの記述は削除
+            (IS_MA_AVAILABLE ? "(Modular Avatar 連携が有効です)" : "(注意: Modular Avatar 連携は無効です)"),
+            MessageType.Info);
         GUILayout.Space(10);
 
-        setupAvatarObject = EditorGUILayout.ObjectField("アバターオブジェクト", setupAvatarObject, typeof(GameObject), true) as GameObject;
-        setupClothingObject = EditorGUILayout.ObjectField("衣装オブジェクト", setupClothingObject, typeof(GameObject), true) as GameObject;
-
+        avatarForSetup = EditorGUILayout.ObjectField("アバターオブジェクト", avatarForSetup, typeof(GameObject), true) as GameObject;
+        clothingForSetup = EditorGUILayout.ObjectField("衣装オブジェクト", clothingForSetup, typeof(GameObject), true) as GameObject;
         GUILayout.Space(10);
+
         GUILayout.Label("適用するスケールデータを選択", EditorStyles.boldLabel);
-        DrawScaleSelectionListForSetup();
-
+        DrawScaleSelectionListForSetupGUI();
         GUILayout.Space(10);
-        EditorGUI.BeginDisabledGroup(setupAvatarObject == null || setupClothingObject == null || string.IsNullOrEmpty(selectedClothingNameForSetup) || string.IsNullOrEmpty(selectedTargetAvatarNameForSetup) || !MA_AVAILABLE);
-        if (GUILayout.Button("スケール適用＆基本セットアップ実行", GUILayout.Height(40)))
+
+        // MAが利用できない場合でもスケール適用だけはできるようにするか検討 → MA連携が主目的なので無効のまま
+        EditorGUI.BeginDisabledGroup(avatarForSetup == null || clothingForSetup == null || selectedDataForSetup == null || !IS_MA_AVAILABLE);
+        if (GUILayout.Button("スケール適用＆基本MAセットアップ実行", GUILayout.Height(40))) // ボタン名を戻す
         {
-            ExecuteSetup();
+            ExecuteAutomatedSetup();
         }
         EditorGUI.EndDisabledGroup();
     }
 
-    // セットアップタブ用 スケールデータ選択リスト
-    void DrawScaleSelectionListForSetup()
+    private void DrawScaleSelectionListForSetupGUI()
     {
-        if (scaleDatabase == null || scaleDatabase.scaleEntries.Count == 0)
+        if (scaleDatabase == null || !scaleDatabase.scaleEntries.Any())
         {
             EditorGUILayout.HelpBox("保存されているスケールデータがありません。「スケール抽出」タブでデータを追加してください。", MessageType.Warning);
             return;
         }
-
         scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(150));
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-
-        string currentSelectionKey = $"{selectedClothingNameForSetup}/{selectedTargetAvatarNameForSetup}";
-
         foreach (var entry in scaleDatabase.scaleEntries.OrderBy(e => e.clothingName).ThenBy(e => e.targetAvatarName))
         {
-            string entryLabel = $"{entry.clothingName} / {entry.targetAvatarName} (Scale: {entry.scaleValue})";
-            string entryKey = $"{entry.clothingName}/{entry.targetAvatarName}";
-
-            if (EditorGUILayout.ToggleLeft(entryLabel, currentSelectionKey == entryKey, EditorStyles.radioButton))
+            string entryLabel = $"{entry.clothingName} / {entry.targetAvatarName} (Scale: {entry.scaleValue:F3})";
+            bool isSelected = selectedDataForSetup == entry;
+            if (EditorGUILayout.ToggleLeft(entryLabel, isSelected, EditorStyles.radioButton))
             {
-                if (currentSelectionKey != entryKey)
-                {
-                    selectedClothingNameForSetup = entry.clothingName;
-                    selectedTargetAvatarNameForSetup = entry.targetAvatarName;
-                }
+                if (!isSelected) selectedDataForSetup = entry;
             }
         }
-
         EditorGUILayout.EndVertical();
         EditorGUILayout.EndScrollView();
     }
 
-    // --- 「スケール抽出」タブ ---
-    void DrawExtractTab()
+    private void DrawExtractTab()
     {
         GUILayout.Label("衣装スケール抽出 (オブジェクト指定)", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
-            "1. 下の欄にそれぞれのGameObjectをドラッグ＆ドロップ。\n" +
-            "   - スケール元: スケール値(X軸)を取得する衣装オブジェクト。\n" +
-            "   - 衣装名参照: 保存する「衣装名」として使うオブジェクト。\n" +
-            "   - 対象アバター参照: 保存する「対象アバター名」として使うオブジェクト。\n" +
-            "2. 「現在の設定でスケールを抽出」ボタンをクリック。", MessageType.Info);
+            "1. 各フィールドに参照するGameObjectをドラッグ＆ドロップします。\n" +
+            "   - スケール元 衣装: スケール値(X軸)を取得する対象の衣装オブジェクト。\n" +
+            "   - 衣装名 参照: 保存する「衣装名」として名前を使用するオブジェクト。\n" +
+            "   - 対象アバター 参照: 保存する「対象アバター名」として名前を使用するオブジェクト。\n" +
+            "2. 「現在の設定でスケールを抽出・保存」ボタンをクリックします。",
+            MessageType.Info);
         GUILayout.Space(10);
-
-        extractSourceClothingObject = EditorGUILayout.ObjectField("スケール元 衣装Obj", extractSourceClothingObject, typeof(GameObject), true) as GameObject;
-        extractClothingRefObject = EditorGUILayout.ObjectField("衣装名 参照Obj", extractClothingRefObject, typeof(GameObject), true) as GameObject;
-        extractTargetAvatarRefObject = EditorGUILayout.ObjectField("対象アバター 参照Obj", extractTargetAvatarRefObject, typeof(GameObject), true) as GameObject;
-
+        sourceClothingObject = EditorGUILayout.ObjectField("スケール元 衣装Obj", sourceClothingObject, typeof(GameObject), true) as GameObject;
+        clothingRefObject = EditorGUILayout.ObjectField("衣装名 参照Obj", clothingRefObject, typeof(GameObject), true) as GameObject;
+        targetAvatarRefObject = EditorGUILayout.ObjectField("対象アバター 参照Obj", targetAvatarRefObject, typeof(GameObject), true) as GameObject;
         GUILayout.Space(10);
-        EditorGUI.BeginDisabledGroup(extractSourceClothingObject == null || extractClothingRefObject == null || extractTargetAvatarRefObject == null);
-        if (GUILayout.Button("現在の設定でスケールを抽出", GUILayout.Height(30)))
+        EditorGUI.BeginDisabledGroup(sourceClothingObject == null || clothingRefObject == null || targetAvatarRefObject == null);
+        if (GUILayout.Button("現在の設定でスケールを抽出・保存", GUILayout.Height(30)))
         {
-            SaveCurrentScaleFromObjects();
+            ExtractAndSaveScaleFromObjects();
         }
         EditorGUI.EndDisabledGroup();
-
         GUILayout.Space(20);
-        if (GUILayout.Button("スケールデータベースを保存 (手動)", GUILayout.Height(30)))
+        if (GUILayout.Button("現在のデータベースをJSONに保存 (手動)", GUILayout.Height(30)))
         {
-            SaveScaleDatabase();
+            SaveDatabase();
         }
     }
 
-    // --- 「メニュー生成」タブ ---
-    void DrawGenerateTab()
+    private void DrawGenerateTab()
     {
-        GUILayout.Label("GameObjectメニュー生成", EditorStyles.boldLabel);
-        EditorGUILayout.HelpBox("保存されたスケール値を「GameObject」メニューから直接適用できるようにします。\nデータベースを更新したら、再度生成してUnityを再起動してください。", MessageType.Info);
+        GUILayout.Label("GameObjectメニュー自動生成", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox(
+            $"保存されているスケールデータを、UnityのGameObjectメニューから直接適用できるようにするスクリプト ({GENERATED_MENU_SCRIPT_FILENAME}) を自動生成します。\n" +
+            "この機能は、スケール値の適用のみを行います。(MA設定やその他の自動設定は行いません)\n" +
+            "データベースを更新した場合は、再度このボタンを押してスクリプトを再生成し、Unityを再起動するかスクリプトを再コンパイルしてください。",
+            MessageType.Info);
         GUILayout.Space(10);
 
-        if (GUILayout.Button("メニュースクリプトを生成", GUILayout.Height(30)))
+        if (GUILayout.Button($"メニュースクリプトを生成 ({GENERATED_MENU_SCRIPT_FILENAME})", GUILayout.Height(30)))
         {
             GenerateMenuScript();
         }
     }
 
-    // --- コア処理 ---
-
-    // セットアップ実行
-    private void ExecuteSetup()
+    private void ExecuteAutomatedSetup()
     {
-        if (!MA_AVAILABLE) { ShowModularAvatarError(); return; }
-        if (setupAvatarObject == null || setupClothingObject == null || string.IsNullOrEmpty(selectedClothingNameForSetup) || string.IsNullOrEmpty(selectedTargetAvatarNameForSetup)) return;
+        // MAが利用できない場合は処理を中断（ボタンが無効化されているはずだが念のため）
+        if (!IS_MA_AVAILABLE) { ShowMAErrorDialog(); return; }
+        if (avatarForSetup == null || clothingForSetup == null || selectedDataForSetup == null)
+        {
+            Debug.LogError($"{PRODUCT_NAME}: セットアップに必要なオブジェクトまたはデータが選択されていません。");
+            return;
+        }
 
-        ClothingScaleDataV3 selectedData = scaleDatabase?.scaleEntries?.Find(
-            e => e.clothingName == selectedClothingNameForSetup && e.targetAvatarName == selectedTargetAvatarNameForSetup);
+        string clothingName = clothingForSetup.name;
+        string avatarName = avatarForSetup.name;
+        float scaleToApply = selectedDataForSetup.scaleValue;
 
-        if (selectedData == null) { EditorUtility.DisplayDialog("エラー", "選択されたスケールデータが見つかりません。", "OK"); return; }
+        Debug.Log($"{PRODUCT_NAME}: セットアップ開始 - 衣装「{clothingName}」をアバター「{avatarName}」にスケール {scaleToApply:F3} で適用します。");
 
-        Debug.Log($"セットアップ開始: 衣装 '{setupClothingObject.name}' を アバター '{setupAvatarObject.name}' に スケール {selectedData.scaleValue} で適用します。");
+        // アバターへの親子付け
+        Undo.SetTransformParent(clothingForSetup.transform, avatarForSetup.transform, "Set Clothing Parent to Avatar");
+        Debug.Log($"{PRODUCT_NAME}: 衣装「{clothingName}」をアバター「{avatarName}」の子オブジェクトに設定しました。");
 
-        Undo.SetTransformParent(setupClothingObject.transform, setupAvatarObject.transform, "Set Clothing Parent");
-        Debug.Log($"衣装 '{setupClothingObject.name}' を アバター '{setupAvatarObject.name}' の子に設定しました。");
+        // スケール適用（ワールド位置・回転保持）
+        ApplyScaleAndPreserveWorldTransform(clothingForSetup.transform, scaleToApply);
+        Debug.Log($"{PRODUCT_NAME}: スケール {scaleToApply:F3} を適用し、ワールド座標を保持しました。");
 
-        ApplyScaleAndPosition(setupClothingObject.transform, selectedData.scaleValue);
-        Debug.Log($"スケール {selectedData.scaleValue} を適用し、位置を調整しました。");
-
+        // Modular Avatar Merge Armature コンポーネントの追加
 #if MODULAR_AVATAR
-        SetupModularAvatarMergeArmature(setupClothingObject.transform);
+        SetupMAComponent(clothingForSetup.transform);
 #endif
 
-        EditorUtility.DisplayDialog("完了", $"衣装 '{setupClothingObject.name}' の基本セットアップが完了しました。\n- 親子関係を設定\n- スケール {selectedData.scaleValue} を適用\n" + (MA_AVAILABLE ? "- Modular Avatar Merge Armature を設定\n" : "\n") + "\n次は手動でボーン位置の微調整や貫通対策を行ってください。", "OK");
+        // 完了ダイアログ
+        EditorUtility.DisplayDialog(PRODUCT_NAME,
+            $"衣装「{clothingName}」の基本セットアップが完了しました。\n" +
+            $"- 親子関係: 設定済み\n" +
+            $"- スケール: {scaleToApply:F3} に適用済み\n" +
+            (IS_MA_AVAILABLE ? "- Modular Avatar Merge Armature: 設定/確認済み\n" : "\n") +
+            "\n【次のステップ】\n" +
+            "手動でボーン位置の微調整、ウェイト調整、メッシュの貫通対策などを行ってください。",
+            "OK");
     }
 
-    // スケールと位置適用
-    private void ApplyScaleAndPosition(Transform targetTransform, float scaleValue)
+    // スケールを適用しつつワールド座標を保持
+    private void ApplyScaleAndPreserveWorldTransform(Transform targetTransform, float scaleValue)
     {
-        if (targetTransform == null) return;
+        if (targetTransform == null) { Debug.LogError($"{PRODUCT_NAME}: スケール適用対象のTransformがnullです。"); return; }
         Vector3 originalWorldPosition = targetTransform.position;
         Quaternion originalWorldRotation = targetTransform.rotation;
-        Undo.RecordObject(targetTransform, "Apply Scale and Position");
+        Undo.RecordObject(targetTransform, "Apply Scale and Preserve World Transform");
         targetTransform.localScale = Vector3.one * scaleValue;
         targetTransform.position = originalWorldPosition;
         targetTransform.rotation = originalWorldRotation;
         EditorUtility.SetDirty(targetTransform);
     }
 
-    // MA設定メソッド
 #if MODULAR_AVATAR
-private void SetupModularAvatarMergeArmature(Transform clothingRoot)
-{
-    if (clothingRoot == null) return;
-    Transform clothingArmatureRoot = FindArmatureRoot(clothingRoot);
-    if (clothingArmatureRoot == null)
+    // Modular Avatar Merge Armature コンポーネントを追加する（シンプル版）
+    private void SetupMAComponent(Transform clothingRootTransform)
     {
-        Debug.LogWarning($"衣装 '{clothingRoot.name}' の Armature ルートが見つかりませんでした。MA Merge Armature の設定をスキップします。");
-        return;
+        if (clothingRootTransform == null) return;
+        // Armatureを探す、なければ衣装ルートを使う
+        Transform armatureTargetTransform = FindArmatureRootRecursive(clothingRootTransform) ?? clothingRootTransform;
+
+        ModularAvatarMergeArmature maComponent = armatureTargetTransform.gameObject.GetComponent<ModularAvatarMergeArmature>();
+        if (maComponent == null)
+        {
+            maComponent = Undo.AddComponent<ModularAvatarMergeArmature>(armatureTargetTransform.gameObject);
+            Debug.Log($"{PRODUCT_NAME}: ModularAvatarMergeArmature を「{armatureTargetTransform.name}」に追加しました。");
+        }
+        else
+        {
+            Debug.Log($"{PRODUCT_NAME}: 既存の ModularAvatarMergeArmature を「{armatureTargetTransform.name}」で使用します。");
+        }
+        EditorUtility.SetDirty(maComponent);
+        Debug.Log($"{PRODUCT_NAME}: ModularAvatarMergeArmature の設定を確認/更新しました。（基本的なボーンマージ用）");
     }
-
-    ModularAvatarMergeArmature maMergeArmature = clothingArmatureRoot.gameObject.GetComponent<ModularAvatarMergeArmature>();
-    if (maMergeArmature == null)
-    {
-        maMergeArmature = Undo.AddComponent<ModularAvatarMergeArmature>(clothingArmatureRoot.gameObject);
-        Debug.Log($"ModularAvatarMergeArmature を '{clothingArmatureRoot.name}' に追加しました。");
-    } else {
-        Debug.Log($"既存の ModularAvatarMergeArmature を '{clothingArmatureRoot.name}' で使用します。");
-    }
-
-    // 以下の2行をコメントアウトまたは削除
-    // maMergeArmature.pathMode = ArmaturePathMode.Relative;
-    // maMergeArmature.matchAvatarExpressions = true;
-
-    EditorUtility.SetDirty(maMergeArmature);
-    Debug.Log($"ModularAvatarMergeArmature の設定を更新しました。");
-}
 #endif
 
-
-
-    // Armatureルート検索
-    private Transform FindArmatureRoot(Transform root)
+    // Armature ルートを探す（再帰）
+    private Transform FindArmatureRootRecursive(Transform currentTransform)
     {
-        if (root == null) return null;
-        Transform armature = root.Find("Armature");
-        if (armature != null) return armature;
-        foreach (Transform child in root) { if (child.name == "Hips") return child.parent; }
-        SkinnedMeshRenderer smr = root.GetComponentInChildren<SkinnedMeshRenderer>(true);
+        if (currentTransform == null) return null;
+        // 一般的な名前でチェック
+        if (currentTransform.name.Equals("Armature", System.StringComparison.OrdinalIgnoreCase)) return currentTransform;
+        if (currentTransform.name.Equals("armature", System.StringComparison.OrdinalIgnoreCase)) return currentTransform; // 小文字も考慮
+
+        // Hipsの親をチェック（ただしルート直下でない場合）
+        if (currentTransform.name.Equals("Hips", System.StringComparison.OrdinalIgnoreCase) && currentTransform.parent != null)
+        {
+            // 親がアバター/衣装ルートでなければ、それがArmatureの可能性が高い
+            bool isRootChildHips = (avatarForSetup != null && currentTransform.parent == avatarForSetup.transform) ||
+                                   (clothingForSetup != null && currentTransform.parent == clothingForSetup.transform);
+            if (!isRootChildHips) return currentTransform.parent;
+        }
+
+        // SkinnedMeshRendererのrootBoneから辿る
+        SkinnedMeshRenderer smr = currentTransform.GetComponentInChildren<SkinnedMeshRenderer>(true); // 子要素も含めて検索
         if (smr != null && smr.rootBone != null)
         {
-            Transform current = smr.rootBone;
-            while (current != null && current.parent != null && current.parent != root) { current = current.parent; }
-            if (current != null && current.parent == root) { return current; }
-        }
-        return null;
-    }
+            Transform boneWalker = smr.rootBone;
+            // rootBoneが現在のTransformの直接の子 or 孫(...)階層にあるかチェック
+            Transform parentCheck = boneWalker;
+            while(parentCheck != null)
+            {
+                if(parentCheck == currentTransform) break; // currentTransformの子孫である
+                parentCheck = parentCheck.parent;
+            }
 
-    // --- データベース関連 ---
-
-    private void LoadScaleDatabase()
-    {
-        if (File.Exists(DB_FILE_PATH))
-        {
-            try {
-                string json = File.ReadAllText(DB_FILE_PATH);
-                scaleDatabase = JsonUtility.FromJson<CharacterScaleDatabaseV3>(json);
-            } catch (System.Exception e) {
-                Debug.LogError($"データベースファイルの読み込みに失敗しました: {DB_FILE_PATH}\n{e}");
-                scaleDatabase = null;
+            if(parentCheck == currentTransform) // rootBoneがcurrentTransformの子孫の場合
+            {
+                // HipsがrootBoneならその親を返す
+                if (boneWalker.name.Equals("Hips", System.StringComparison.OrdinalIgnoreCase) && boneWalker.parent != currentTransform)
+                    return boneWalker.parent;
+                // そうでなければrootBone自体か、その親がArmatureかもしれないので親を返す
+                return boneWalker.parent != currentTransform ? boneWalker.parent : boneWalker;
             }
         }
-        if (scaleDatabase == null) scaleDatabase = new CharacterScaleDatabaseV3();
-        if (scaleDatabase.scaleEntries == null) scaleDatabase.scaleEntries = new List<ClothingScaleDataV3>();
-        Debug.Log($"スケールデータベース(V3)を読み込みました。{scaleDatabase.scaleEntries.Count} 件");
-    }
 
-    // スケール抽出 (ObjectField版)
-    private void SaveCurrentScaleFromObjects()
-    {
-        if (extractSourceClothingObject == null || extractClothingRefObject == null || extractTargetAvatarRefObject == null)
+        // 子を再帰的に探索
+        foreach (Transform child in currentTransform)
         {
-            EditorUtility.DisplayDialog("エラー", "「スケール元」「衣装名参照」「対象アバター参照」の全てのオブジェクトを指定してください。", "OK");
-            return;
+            Transform found = FindArmatureRootRecursive(child);
+            if (found != null) return found;
         }
 
-        Transform sourceTransform = extractSourceClothingObject.transform;
-        float scaleValue = sourceTransform.localScale.x;
-        string clothingName = extractClothingRefObject.name;
-        string targetAvatarName = extractTargetAvatarRefObject.name;
+        return null; // 見つからなければnull
+    }
 
-        ClothingScaleDataV3 newEntry = new ClothingScaleDataV3 {
-            clothingName = clothingName, targetAvatarName = targetAvatarName, scaleValue = scaleValue
-        };
+    // データベースをロード
+    private void LoadDatabase()
+    {
+        if (File.Exists(DatabasePath))
+        {
+            try {
+                string json = File.ReadAllText(DatabasePath);
+                scaleDatabase = JsonUtility.FromJson<ScaleSyncDatabase>(json);
+            } catch (System.Exception e) {
+                Debug.LogError($"{PRODUCT_NAME}: データベースファイルの読み込みに失敗しました。\nPath: {DatabasePath}\nError: {e.Message}");
+                scaleDatabase = null; // エラー時はnullリセット
+            }
+        }
+        // nullチェックと初期化を強化
+        if (scaleDatabase == null) scaleDatabase = new ScaleSyncDatabase();
+        if (scaleDatabase.scaleEntries == null) scaleDatabase.scaleEntries = new List<ScaleSyncData>();
+        Debug.Log($"{PRODUCT_NAME}: スケールデータベースを読み込みました。登録数: {scaleDatabase.scaleEntries.Count}件");
+    }
 
-        LoadScaleDatabase();
-
+    // スケール抽出＆保存
+    private void ExtractAndSaveScaleFromObjects()
+    {
+        if (sourceClothingObject == null || clothingRefObject == null || targetAvatarRefObject == null)
+        {
+            EditorUtility.DisplayDialog("エラー", "「スケール元 衣装」「衣装名 参照」「対象アバター 参照」の全てのオブジェクトを指定してください。", "OK");
+            return;
+        }
+        float extractedScale = sourceClothingObject.transform.localScale.x;
+        string clothingObjectName = clothingRefObject.name;
+        string targetAvatarObjectName = targetAvatarRefObject.name;
+        var newEntry = new ScaleSyncData(clothingObjectName, targetAvatarObjectName, extractedScale);
+        LoadDatabase(); // 最新をロード
         int existingIndex = scaleDatabase.scaleEntries.FindIndex(
-            e => e.clothingName == clothingName && e.targetAvatarName == targetAvatarName);
-
+            e => e.clothingName == clothingObjectName && e.targetAvatarName == targetAvatarObjectName);
         if (existingIndex != -1) {
             scaleDatabase.scaleEntries[existingIndex] = newEntry;
-            Debug.Log($"スケールデータ更新: {clothingName} / {targetAvatarName} = {scaleValue}");
+            Debug.Log($"{PRODUCT_NAME}: スケールデータを更新しました - 衣装: {clothingObjectName}, アバター: {targetAvatarObjectName}, スケール: {extractedScale:F3}");
         } else {
             scaleDatabase.scaleEntries.Add(newEntry);
-            Debug.Log($"スケールデータ追加: {clothingName} / {targetAvatarName} = {scaleValue}");
+            Debug.Log($"{PRODUCT_NAME}: 新しいスケールデータを追加しました - 衣装: {clothingObjectName}, アバター: {targetAvatarObjectName}, スケール: {extractedScale:F3}");
         }
-
-        SaveScaleDatabase(); // 自動保存
-
-        EditorUtility.DisplayDialog("完了",
-            $"スケール値 {scaleValue} を保存しました：\n衣装：{clothingName}\n対象：{targetAvatarName}", "OK");
+        SaveDatabase(); // 保存実行
+        EditorUtility.DisplayDialog(PRODUCT_NAME,
+            $"スケール値 {extractedScale:F3} を保存しました。\n" +
+            $"衣装: {clothingObjectName}\n" +
+            $"対象アバター: {targetAvatarObjectName}", "OK");
     }
 
-    // データベース保存
-    private void SaveScaleDatabase()
+    // データベースを保存
+    private void SaveDatabase()
     {
-        if (scaleDatabase == null) return;
-        try
-        {
-             string directoryPath = Path.GetDirectoryName(DB_FILE_PATH);
-             if (!Directory.Exists(directoryPath)) Directory.CreateDirectory(directoryPath);
-             string json = JsonUtility.ToJson(scaleDatabase, true);
-             File.WriteAllText(DB_FILE_PATH, json);
-             AssetDatabase.Refresh();
-             Debug.Log($"スケールデータベース(V3)を保存しました: {DB_FILE_PATH}");
-        }
-        catch (System.Exception e)
-        {
-             Debug.LogError($"スケールデータベース(V3)の保存に失敗: {e.Message}");
-             EditorUtility.DisplayDialog("エラー", "スケールデータベース(V3)の保存に失敗しました。", "OK");
+        if (scaleDatabase == null) { Debug.LogError($"{PRODUCT_NAME}: データベースがnullのため保存できませんでした。"); return; }
+        try {
+            string directory = Path.GetDirectoryName(DatabasePath);
+            if (!Directory.Exists(directory)) { Directory.CreateDirectory(directory); Debug.Log($"{PRODUCT_NAME}: データ保存用ディレクトリを作成しました: {directory}"); }
+            string json = JsonUtility.ToJson(scaleDatabase, true);
+            File.WriteAllText(DatabasePath, json);
+            AssetDatabase.Refresh();
+            Debug.Log($"{PRODUCT_NAME}: スケールデータベースを保存しました。Path: {DatabasePath}");
+        } catch (System.Exception e) {
+            Debug.LogError($"{PRODUCT_NAME}: スケールデータベースの保存に失敗しました。\nPath: {DatabasePath}\nError: {e.Message}");
+            EditorUtility.DisplayDialog("エラー", "スケールデータベースの保存に失敗しました。詳細はコンソールを確認してください。", "OK");
         }
     }
 
-    // --- メニュー生成 ---
+    // --- ★★★ ここからがメニュー生成のエラー修正箇所 ★★★ ---
     private void GenerateMenuScript()
     {
-        LoadScaleDatabase();
-        if (scaleDatabase == null || scaleDatabase.scaleEntries.Count == 0)
+        LoadDatabase();
+        if (scaleDatabase == null || !scaleDatabase.scaleEntries.Any())
         {
-            EditorUtility.DisplayDialog("エラー", "スケールデータが存在しません。", "OK");
+            EditorUtility.DisplayDialog("エラー", "保存されているスケールデータがありません。「スケール抽出」タブでデータを追加してください。", "OK");
             return;
         }
-
-        StringBuilder sb = new StringBuilder();
+        var sb = new StringBuilder();
+        sb.AppendLine("#if UNITY_EDITOR");
         sb.AppendLine("using UnityEngine;");
         sb.AppendLine("using UnityEditor;");
+        // sb.AppendLine("using System.IO;"); // ★ Pathクラスを使わないので不要
         sb.AppendLine("");
-        sb.AppendLine("// This script was automatically generated by ClothingScaleManagerV3. Do not edit directly.");
-        sb.AppendLine("public class ClothScaleAdjusterV3");
+        sb.AppendLine($"// This script was automatically generated by {PRODUCT_NAME}. Do not edit directly.");
+        sb.AppendLine($"public class {GeneratedMenuScriptClassName}"); // ★ 定数を使用
         sb.AppendLine("{");
-        sb.AppendLine($"    private const string MENU_ROOT = \"{MENU_ROOT_PATH}\";"); // 定数を生成コード内にも定義
-
-        int menuOrder = 50;
+        sb.AppendLine($"    private const string GENERATED_MENU_ROOT = \"{MENU_ROOT_PATH_IN_GENERATED_SCRIPT}\";");
+        sb.AppendLine("");
+        int menuOrder = 10;
         foreach (var entry in scaleDatabase.scaleEntries.OrderBy(e => e.clothingName).ThenBy(e => e.targetAvatarName))
         {
-            string methodName = $"Apply_{CleanName(entry.clothingName)}_To_{CleanName(entry.targetAvatarName)}";
-            string menuPath = $"{MENU_ROOT_PATH}/{CleanNameForMenu(entry.clothingName)}/{CleanNameForMenu(entry.targetAvatarName)} (Scale {entry.scaleValue})";
-
-            sb.AppendLine($"    [MenuItem(\"{menuPath}\", false, {menuOrder})]");
-            // ApplyScaleToSelectionメソッドを呼び出すように変更。引数としてscaleValueとundoName文字列を渡す。
-            // undoName文字列を正しくエスケープする (\")
-            string undoNameString = $"Apply Scale ({entry.clothingName} for {entry.targetAvatarName})";
-            sb.AppendLine($"    private static void {methodName}() => ApplyScaleToSelection({entry.scaleValue}f, \"{undoNameString.Replace("\"", "\\\"")}\");"); // f を忘れずに
+            string cleanClothingName = SanitizeForMenu(entry.clothingName);
+            string cleanAvatarName = SanitizeForMenu(entry.targetAvatarName);
+            string methodName = $"Apply_{SanitizeForMethodName(entry.clothingName)}_To_{SanitizeForMethodName(entry.targetAvatarName)}";
+            // 生成されるコード内で GENERATED_MENU_ROOT 定数を文字列結合で使う
+            string menuPath = $"GENERATED_MENU_ROOT + \"/{cleanClothingName}/{cleanAvatarName} (Scale {entry.scaleValue:F3})\"";
+            string undoName = $"Apply Scale ({entry.clothingName} for {entry.targetAvatarName})";
+            sb.AppendLine($"    [MenuItem({menuPath}, false, {menuOrder})]");
+            sb.AppendLine($"    private static void {methodName}() => ApplyScaleToSelection_GeneratedMenu({entry.scaleValue}f, \"{EscapeStringForCode(undoName)}\");");
             sb.AppendLine("");
             menuOrder++;
         }
-
-        // --- ★★★ここからが修正箇所★★★ ---
-        // ヘルパーメソッド（ApplyScaleToSelection）の定義。引数名を正しく記述。
-        sb.AppendLine("    private static void ApplyScaleToSelection(float scaleValue, string undoName)");
+        sb.AppendLine("    private static void ApplyScaleToSelection_GeneratedMenu(float scale, string undoMsg)");
         sb.AppendLine("    {");
         sb.AppendLine("        if (Selection.activeTransform != null)");
         sb.AppendLine("        {");
-        // Undoメッセージには引数 undoName をそのまま使用
-        sb.AppendLine("            Undo.RecordObject(Selection.activeTransform, undoName);"); // $"" を削除し、変数名を直接使用
-        sb.AppendLine("            Vector3 originalPosition = Selection.activeTransform.position;");
-        sb.AppendLine("            Quaternion originalRotation = Selection.activeTransform.rotation;");
-        // スケール適用には引数 scaleValue をそのまま使用
-        sb.AppendLine("            Selection.activeTransform.localScale = Vector3.one * scaleValue;"); // $"" を削除し、変数名を直接使用
-        sb.AppendLine("            Selection.activeTransform.position = originalPosition;");
-        sb.AppendLine("            Selection.activeTransform.rotation = originalRotation;");
+        sb.AppendLine("            Undo.RecordObject(Selection.activeTransform, undoMsg);");
+        sb.AppendLine("            Vector3 originalPos = Selection.activeTransform.position;");
+        sb.AppendLine("            Quaternion originalRot = Selection.activeTransform.rotation;");
+        sb.AppendLine("            Selection.activeTransform.localScale = Vector3.one * scale;");
+        sb.AppendLine("            Selection.activeTransform.position = originalPos;");
+        sb.AppendLine("            Selection.activeTransform.rotation = originalRot;");
         sb.AppendLine("            EditorUtility.SetDirty(Selection.activeTransform);");
-        // Debugログには引数 scaleValue をそのまま使用し、文字列補間を正しく使う
-        sb.AppendLine("            Debug.Log($\"Applied scale {scaleValue} to {Selection.activeTransform.name} via menu.\");"); // 変数名を{}で囲む
+        // ★ デバッグログの修正: Path や GeneratedMenuScriptPath を参照せず、固定のクラス名を使用
+        sb.AppendLine($"            Debug.Log($\"[{GeneratedMenuScriptClassName}] Applied scale {{scale:F3}} to {{Selection.activeTransform.name}}.\");");
         sb.AppendLine("        }");
         sb.AppendLine("        else { Debug.LogWarning(\"No object selected to apply scale.\"); }");
         sb.AppendLine("    }");
         sb.AppendLine("");
-        // --- ★★★修正箇所ここまで★★★ ---
-
-        // バリデーションメソッド
-        sb.AppendLine($"    [MenuItem(MENU_ROOT, true)]"); // 定数を参照
-        sb.AppendLine("    private static bool ValidateSelection()");
+        sb.AppendLine($"    [MenuItem(GENERATED_MENU_ROOT, true)]");
+        sb.AppendLine("    private static bool ValidateGeneratedMenuSelection()");
         sb.AppendLine("    { return Selection.activeTransform != null; }");
-
         sb.AppendLine("}");
-
-        // ファイル書き込み
-        try
-        {
-            string directory = Path.GetDirectoryName(MENU_SCRIPT_PATH);
+        sb.AppendLine("#endif // UNITY_EDITOR");
+        try {
+            string directory = Path.GetDirectoryName(GeneratedMenuScriptPath);
             if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
-            File.WriteAllText(MENU_SCRIPT_PATH, sb.ToString());
+            File.WriteAllText(GeneratedMenuScriptPath, sb.ToString());
             AssetDatabase.Refresh();
-            EditorUtility.DisplayDialog("完了", "スケールメニューを生成しました (V3)。\nUnityエディタの再起動または再コンパイル後にメニューが更新されます。", "OK");
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"メニュースクリプト(V3)の生成に失敗: {e.Message}");
-            EditorUtility.DisplayDialog("エラー", "メニュースクリプト(V3)の生成に失敗しました。", "OK");
+            EditorUtility.DisplayDialog(PRODUCT_NAME,
+                "GameObjectメニュー用のスクリプトを生成しました。\n" +
+                "Unityエディタの再起動、またはスクリプトの再コンパイル後にメニューが更新されます。", "OK");
+        } catch (System.Exception e) {
+            Debug.LogError($"{PRODUCT_NAME}: メニュースクリプトの生成に失敗しました。\nPath: {GeneratedMenuScriptPath}\nError: {e.Message}");
+            EditorUtility.DisplayDialog("エラー", "メニュースクリプトの生成に失敗しました。詳細はコンソールを確認してください。", "OK");
         }
     }
+    // --- ★★★ メニュー生成のエラー修正箇所ここまで ★★★ ---
 
     // --- ヘルパーメソッド ---
-    private string CleanName(string input)
+    private string SanitizeForMethodName(string input)
     {
         if (string.IsNullOrEmpty(input)) return "Default";
-        StringBuilder sb = new StringBuilder();
-        bool nextUpper = true;
+        var sb = new StringBuilder();
+        bool capitalizeNext = true;
         foreach (char c in input)
         {
-            if (char.IsLetterOrDigit(c)) { sb.Append(nextUpper ? char.ToUpper(c) : c); nextUpper = false; }
-            else { nextUpper = true; }
+            if (char.IsLetterOrDigit(c)) { sb.Append(capitalizeNext ? char.ToUpper(c) : c); capitalizeNext = false; }
+            else { capitalizeNext = true; }
         }
+        // メソッド名の先頭が数字にならないようにする (もしあれば "_" を追加)
+        if (sb.Length > 0 && char.IsDigit(sb[0])) sb.Insert(0, "_");
         return sb.Length > 0 ? sb.ToString() : "Default";
     }
 
-    private string CleanNameForMenu(string input)
+    private string SanitizeForMenu(string input)
     {
          if (string.IsNullOrEmpty(input)) return "_";
-        return input.Replace("/", "／").Replace(".", "_").Replace(" ", "_");
+        // メニューパスに使えない可能性のある文字を置換
+        return input.Replace("/", "／").Replace(".", "_").Replace(" ", "_").Replace("(", "（").Replace(")", "）").Replace("[", "【").Replace("]", "】").Replace(":", "：");
     }
 
-     // MAエラー表示
-     private void ShowModularAvatarError()
-     {
-          EditorUtility.DisplayDialog("エラー", "Modular Avatar がプロジェクトにインポートされていないか、正しく認識されていません。\n(Scripting Define Symbols に 'MODULAR_AVATAR' が必要かもしれません)", "OK");
-     }
+    private string EscapeStringForCode(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return "";
+        return input.Replace("\\", "\\\\").Replace("\"", "\\\""); // バックスラッシュとダブルクォートをエスケープ
+    }
 
-} // ClothingScaleManagerV3 クラスの終わり
-
+    private void ShowMAErrorDialog()
+    {
+        EditorUtility.DisplayDialog($"エラー: {PRODUCT_NAME} - Modular Avatar 未検出",
+            "この機能を利用するには、Modular Avatar がプロジェクトにインポートされ、正しく認識されている必要があります。\n\n" +
+            "【確認事項】\n" +
+            "1. VRChat Creator Companion (VCC) から Modular Avatar が最新版でインストールされているか。\n" +
+            "2. Unityの Console に Modular Avatar 関連のエラーが出ていないか。\n" +
+            "3. (稀なケース) Project Settings > Player > Scripting Define Symbols に 'MODULAR_AVATAR' が含まれているか。",
+            "OK");
+    }
+}
 #endif // UNITY_EDITOR の終わり
