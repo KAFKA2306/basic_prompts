@@ -96,4 +96,342 @@ Unityエディタ上で3Dキャラクターの体メッシュと衣装メッシ�
 - BVH/Octreeによる空間分割実装で大規模メッシュ対応  
 - レイキャスト判定のさらなる精度向上  
 - ユーザーによる保護ボーンカスタマイズ機能  
-- パラメータプリセットの保存・読み込み  
+- パラメータプリセットの保存・読み込み
+
+---
+
+`MeshSyncPro.cs` の全文コードを以下に示します。これはUnityエディタ拡張として機能し、アバターの体メッシュと衣装メッシュ間の貫通を検出し、修正するツールです。
+
+```csharp
+#if UNITY_EDITOR
+using UnityEngine;
+using UnityEditor;
+using System.Collections.Generic;
+using System.Linq;
+
+public class MeshSyncProUltimateRefined : EditorWindow
+{
+    [MenuItem("Tools/MeshSyncPro Ultimate (Refined)")]
+    static void Open() => GetWindow("MeshSyncPro Ultimate");
+
+    // --- UI Elements ---
+    GameObject avatar;
+    SkinnedMeshRenderer bodyRenderer;
+    Renderer clothRenderer; // SkinnedMeshRenderer or MeshRenderer
+
+    // --- Parameters ---
+    float penetrationThreshold = 0.02f;
+    float pushOutOffset = 0.05f;
+    int smoothingIterations = 1;
+    float smoothingFactor = 0.5f;
+    int influenceRadiusSteps = 5;
+
+    // --- Humanoid Protection ---
+    HumanBodyBones[] protectedBoneEnums = new HumanBodyBones[] {
+        HumanBodyBones.LeftHand, HumanBodyBones.RightHand,
+        HumanBodyBones.LeftFoot, HumanBodyBones.RightFoot,
+        HumanBodyBones.LeftToes, HumanBodyBones.RightToes,
+        HumanBodyBones.Head
+    };
+    List protectedBoneTransforms = new List();
+    HashSet protectedVertices = new HashSet();
+
+    // --- Internal Data ---
+    Renderer[] availableRenderers;
+    string[] availableRendererNames;
+    int selectedBodyRendererIndex = -1;
+    int selectedClothRendererIndex = -1;
+
+    List detectedPenetrationIndices = new List();
+    List detectedWorldPositions = new List();
+
+    Vector2 scrollPosition;
+    bool showProtectedBonesFold = true;
+    Animator animator;
+
+    // --- Life Cycle Methods ---
+    void OnEnable()
+    {
+        SceneView.duringSceneGui += OnSceneGUI;
+        if (avatar != null) LoadAvatarData();
+    }
+
+    void OnDisable()
+    {
+        SceneView.duringSceneGui -= OnSceneGUI;
+    }
+
+    // --- GUI ---
+    void OnGUI()
+    {
+        EditorGUILayout.LabelField("MeshSyncPro Ultimate - 高品質貫通修正", EditorStyles.boldLabel);
+        GUILayout.Space(10);
+
+        EditorGUI.BeginChangeCheck();
+        avatar = (GameObject)EditorGUILayout.ObjectField("アバター", avatar, typeof(GameObject), true);
+        if (EditorGUI.EndChangeCheck() || (avatar != null && availableRenderers == null))
+        {
+            LoadAvatarData();
+        }
+
+        if (avatar == null)
+        {
+            EditorGUILayout.HelpBox("アバターをセットしてください。", MessageType.Info);
+            return;
+        }
+
+        if (availableRenderers == null || availableRenderers.Length == 0)
+        {
+            EditorGUILayout.HelpBox("アバターに有効なレンダラーが見つかりません。", MessageType.Warning);
+            return;
+        }
+
+        selectedBodyRendererIndex = EditorGUILayout.Popup("体メッシュ", selectedBodyRendererIndex, availableRendererNames);
+        selectedClothRendererIndex = EditorGUILayout.Popup("衣装メッシュ", selectedClothRendererIndex, availableRendererNames);
+
+        UpdateSelectedRenderers();
+
+        if (bodyRenderer == null)
+        {
+            EditorGUILayout.HelpBox("体のSkinnedMeshRendererを選択してください。", MessageType.Warning);
+            return;
+        }
+        if (clothRenderer == null)
+        {
+            EditorGUILayout.HelpBox("衣装のRendererを選択してください。", MessageType.Warning);
+            return;
+        }
+        if (bodyRenderer == clothRenderer)
+        {
+            EditorGUILayout.HelpBox("体と衣装に異なるメッシュを選択してください。", MessageType.Error);
+            return;
+        }
+
+        GUILayout.Space(10);
+        EditorGUILayout.LabelField("調整パラメータ", EditorStyles.boldLabel);
+        penetrationThreshold = EditorGUILayout.Slider("貫通検出閾値", penetrationThreshold, 0.001f, 0.1f);
+        pushOutOffset = EditorGUILayout.Slider("基本オフセット", pushOutOffset, 0.001f, 0.1f);
+        influenceRadiusSteps = EditorGUILayout.IntSlider("影響範囲(隣接ステップ)", influenceRadiusSteps, 0, 10);
+        smoothingIterations = EditorGUILayout.IntSlider("スムージング反復回数", smoothingIterations, 0, 20);
+        smoothingFactor = EditorGUILayout.Slider("スムージング係数", smoothingFactor, 0.0f, 1.0f);
+
+        GUILayout.Space(10);
+        EditorGUILayout.LabelField("保護設定", EditorStyles.boldLabel);
+        showProtectedBonesFold = EditorGUILayout.Foldout(showProtectedBonesFold, "保護ボーンリスト");
+        if (showProtectedBonesFold && animator != null)
+        {
+            EditorGUI.indentLevel++;
+            foreach (var boneEnum in protectedBoneEnums) EditorGUILayout.LabelField(boneEnum.ToString());
+            if (GUILayout.Button("保護ボーン再計算"))
+            {
+                CacheProtectedBoneTransforms();
+                CacheProtectedVertices();
+            }
+            EditorGUILayout.HelpBox($"現在 {protectedVertices.Count} 頂点が保護されています。", MessageType.Info);
+            EditorGUI.indentLevel--;
+        }
+        else if (animator == null)
+        {
+            EditorGUILayout.HelpBox("アバターにAnimatorが見つからないため、ボーン保護は無効です。", MessageType.Warning);
+        }
+
+        GUILayout.Space(10);
+        GUI.enabled = bodyRenderer != null && clothRenderer != null && bodyRenderer != clothRenderer;
+        if (GUILayout.Button("貫通検出", GUILayout.Height(30))) DetectPenetrations();
+        GUI.enabled = true;
+
+        if (detectedPenetrationIndices.Count > 0)
+        {
+            EditorGUILayout.LabelField($"検出された貫通頂点数: {detectedPenetrationIndices.Count}");
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(100));
+            foreach (var i in detectedPenetrationIndices) EditorGUILayout.LabelField($"頂点 {i}");
+            EditorGUILayout.EndScrollView();
+
+            GUI.enabled = bodyRenderer != null && clothRenderer != null && bodyRenderer != clothRenderer && detectedPenetrationIndices.Count > 0;
+            if (GUILayout.Button("自動修正実行", GUILayout.Height(30))) AutoFixPenetrations();
+            GUI.enabled = true;
+        }
+    }
+
+    // --- Core Logic ---
+    void LoadAvatarData()
+    {
+        if (avatar == null)
+        {
+            availableRenderers = null; availableRendererNames = null; animator = null;
+            return;
+        }
+        animator = avatar.GetComponent();
+        availableRenderers = avatar.GetComponentsInChildren(true)
+            .Where(r => (r is SkinnedMeshRenderer smr && smr.sharedMesh != null) ||
+                        (r is MeshRenderer mr && mr.GetComponent()?.sharedMesh != null))
+            .ToArray();
+        availableRendererNames = availableRenderers.Select(r => r.name).ToArray();
+        selectedBodyRendererIndex = -1; selectedClothRendererIndex = -1;
+        bodyRenderer = null; clothRenderer = null;
+        detectedPenetrationIndices.Clear(); detectedWorldPositions.Clear();
+        if (animator != null && animator.isHuman)
+        {
+            CacheProtectedBoneTransforms();
+            CacheProtectedVertices();
+        }
+        else
+        {
+            protectedBoneTransforms.Clear(); protectedVertices.Clear();
+        }
+        Repaint();
+    }
+
+    void UpdateSelectedRenderers()
+    {
+        if (availableRenderers == null) return;
+        bodyRenderer = (selectedBodyRendererIndex >= 0 && selectedBodyRendererIndex = 0 && selectedClothRendererIndex ();
+        if (bw.weight0 > 0) influences.Add((bw.boneIndex0, bw.weight0));
+        if (bw.weight1 > 0) influences.Add((bw.boneIndex1, bw.weight1));
+        if (bw.weight2 > 0) influences.Add((bw.boneIndex2, bw.weight2));
+        if (bw.weight3 > 0) influences.Add((bw.boneIndex3, bw.weight3));
+        influences = influences.OrderByDescending(item => item.weight).ToList();
+        if (influences.Count > 0)
+        {
+            Transform dominantBone = meshBones[influences[0].index];
+            foreach (Transform protectedBone in protectedBoneTransforms)
+            {
+                if (dominantBone == protectedBone || dominantBone.IsChildOf(protectedBone)) return true;
+            }
+        }
+        return false;
+    }
+
+    void DetectPenetrations()
+    {
+        if (bodyRenderer == null || clothRenderer == null || bodyRenderer.sharedMesh == null) return;
+        detectedPenetrationIndices.Clear(); detectedWorldPositions.Clear();
+        if (protectedVertices.Count == 0 && animator != null && animator.isHuman) CacheProtectedVertices();
+
+        Mesh bodyMeshBaked = new Mesh(); bodyRenderer.BakeMesh(bodyMeshBaked, true);
+        Mesh clothMeshBaked = new Mesh();
+        bool clothIsSkinned = clothRenderer is SkinnedMeshRenderer;
+        if (clothIsSkinned) ((SkinnedMeshRenderer)clothRenderer).BakeMesh(clothMeshBaked, true);
+        else clothMeshBaked = clothRenderer.GetComponent().sharedMesh;
+
+        Vector3[] bodyVertices_baked = bodyMeshBaked.vertices;
+        Vector3[] bodyNormals_baked = bodyMeshBaked.normals;
+        Vector3[] clothVertices_baked = clothMeshBaked.vertices;
+        Transform bodyTransform = bodyRenderer.transform;
+        Transform clothTransform = clothRenderer.transform;
+        Vector3[] clothVertices_baked_ws = clothVertices_baked.Select(v => clothTransform.TransformPoint(v)).ToArray();
+
+        for (int i = 0; i ().sharedMesh;
+
+        Vector3[] bodyVertices_baked_local = bodyMeshBaked.vertices;
+        Vector3[] clothVertices_baked_local = clothMeshBaked.vertices;
+        int[] clothTriangles_baked = clothMeshBaked.triangles;
+        Vector3[] clothNormals_baked_local = clothMeshBaked.normals;
+
+        Transform bodyTransform = bodyRenderer.transform;
+        Transform clothTransform = clothRenderer.transform;
+
+        Vector3[] clothVertices_baked_ws = clothVertices_baked_local.Select(v => clothTransform.TransformPoint(v)).ToArray();
+
+        // --- 1. 貫通頂点の押し出し ---
+        foreach (int index in detectedPenetrationIndices)
+        {
+            if (protectedVertices.Contains(index)) continue;
+
+            Vector3 bodyVertex_ws = bodyTransform.TransformPoint(bodyVertices_baked_local[index]);
+
+            Vector3 closestPointOnClothSurface_ws;
+            float signedDistanceToClothSurface;
+
+            bool foundClosest = FindClosestPointOnMeshSurface(
+                bodyVertex_ws,
+                clothVertices_baked_ws,
+                clothTriangles_baked,
+                clothNormals_baked_local,
+                clothTransform,
+                out closestPointOnClothSurface_ws,
+                out signedDistanceToClothSurface);
+
+            if (foundClosest && signedDistanceToClothSurface  0 && smoothingFactor > 0f)
+        {
+            Dictionary> adjacencyMap = BuildAdjacencyMap(newMesh);
+            HashSet verticesToSmooth = GetAffectedVertices(detectedPenetrationIndices, adjacencyMap, influenceRadiusSteps);
+            verticesToSmooth.ExceptWith(protectedVertices);
+
+            for (int i = 0; i  0) {
+                    triangleFaceNormal_ws = meshTransform_for_sign.TransformDirection(meshNormals_baked_local_for_sign[0]).normalized;
+                }
+                signedDistance = Vector3.Dot(vecToPoint.normalized, triangleFaceNormal_ws) * vecToPoint.magnitude;
+            }
+        }
+        return found;
+    }
+
+    Vector3 ClosestPointOnTriangle(Vector3 point, Vector3 a, Vector3 b, Vector3 c)
+    {
+        Vector3 ab = b - a; Vector3 ac = c - a; Vector3 ap = point - a;
+        float d1 = Vector3.Dot(ab, ap); float d2 = Vector3.Dot(ac, ap);
+        if (d1 = 0.0f && d4 = 0.0f && d3 = 0.0f && d5 = 0.0f && d6 = 0.0f && (d5 - d6) >= 0.0f) { float w = (d4 - d3) / ((d4 - d3) + (d5 - d6)); return b + w * (c - b); }
+        float denom = 1.0f / (va + vb + vc); float v_coord = vb * denom; float w_coord = vc * denom;
+        return a + ab * v_coord + ac * w_coord;
+    }
+
+    // --- Smoothing Helper Methods ---
+    Dictionary> BuildAdjacencyMap(Mesh mesh)
+    {
+        var map = new Dictionary>(); int[] triangles = mesh.triangles;
+        for (int i = 0; i (); if (!map.ContainsKey(v1)) map[v1] = new HashSet(); if (!map.ContainsKey(v2)) map[v2] = new HashSet();
+            map[v0].Add(v1); map[v0].Add(v2); map[v1].Add(v0); map[v1].Add(v2); map[v2].Add(v0); map[v2].Add(v1);
+        } return map;
+    }
+
+    HashSet GetAffectedVertices(List initialIndices, Dictionary> adjacencyMap, int steps)
+    {
+        HashSet affected = new HashSet(initialIndices); if (steps  queue = new Queue(initialIndices); Dictionary distance = new Dictionary();
+        foreach (int idx in initialIndices) distance[idx] = 0;
+        while (queue.Count > 0) {
+            int current = queue.Dequeue(); int currentDist = distance[current];
+            if (currentDist >= steps) continue;
+            if (adjacencyMap.TryGetValue(current, out HashSet neighbors)) {
+                foreach (int neighbor in neighbors) {
+                    if (!affected.Contains(neighbor)) { affected.Add(neighbor); distance[neighbor] = currentDist + 1; queue.Enqueue(neighbor); }
+                }
+            }
+        } return affected;
+    }
+
+    void ApplyLaplacianSmoothingStep(Vector3[] vertices, Dictionary> adjacencyMap, HashSet targetVertices, float factor)
+    {
+        Vector3[] smoothed_deltas = new Vector3[vertices.Length];
+
+        foreach (int i in targetVertices)
+        {
+            if (adjacencyMap.TryGetValue(i, out HashSet neighbors) && neighbors.Count > 0)
+            {
+                Vector3 centroid = Vector3.zero;
+                foreach (int neighborIdx in neighbors) centroid += vertices[neighborIdx];
+                centroid /= neighbors.Count;
+                smoothed_deltas[i] = Vector3.Lerp(vertices[i], centroid, factor) - vertices[i];
+            }
+            else {
+                smoothed_deltas[i] = Vector3.zero;
+            }
+        }
+        foreach(int i in targetVertices) {
+            vertices[i] += smoothed_deltas[i];
+        }
+    }
+
+    // --- Scene GUI ---
+    void OnSceneGUI(SceneView sceneView)
+    {
+        if (detectedWorldPositions.Count == 0) return;
+        Handles.color = Color.red;
+        foreach (var p_ws in detectedWorldPositions) {
+            float size = HandleUtility.GetHandleSize(p_ws) * 0.03f;
+            Handles.SphereHandleCap(0, p_ws, Quaternion.identity, size, EventType.Repaint);
+        }
+    }
+}
+#endif
+```
