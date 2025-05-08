@@ -1,130 +1,104 @@
-```csharp
 #if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
-using HhotateA.AvatarModifyTools.Core; // MeshCreater.cs必須
 
-public class MeshSyncPro : EditorWindow
+public class MeshSyncProMini : EditorWindow
 {
-    [MenuItem("Tools/MeshSyncPro/貫通修正ツール")]
-    static void Open() => GetWindow("MeshSyncPro - 貫通修正");
-
-    GameObject avatar;
-    Renderer[] rends;
-    MeshCreater[] meshCreators;
-    int bodyIndex = -1, clothingIndex = -1;
-    float threshold = 0.005f;
-    float offset = 0.003f;
-    List results = new();
+    [MenuItem("Tools/MeshSyncProMini")]
+    static void Open() => GetWindow<MeshSyncProMini>("MeshSyncProMini");
+    GameObject avatar; Renderer[] rends;
+    int bodyIdx = -1, clothIdx = -1;
+    float thres = 0.005f, offset = 0.003f;
+    List<int> indices = new();
+    List<Vector3> worldPos = new();
     Vector2 scroll;
-
-    struct PenetrationInfo
-    {
-        public int index;
-        public Vector3 worldPos;
-        public Vector3 normal;
-        public float depth;
-        public PenetrationInfo(int i, Vector3 p, Vector3 n, float d) { index = i; worldPos = p; normal = n; depth = d; }
-    }
-
-    void OnGUI()
-    {
-        EditorGUILayout.LabelField("MeshSyncPro - 貫通修正", EditorStyles.boldLabel);
-        avatar = (GameObject)EditorGUILayout.ObjectField("対象アバター", avatar, typeof(GameObject), true);
-        if (GUILayout.Button("メッシュ読込") && avatar != null) LoadMeshes();
-
-        if (rends == null || rends.Length  r != null ? r.name : "N/A").ToArray();
-        bodyIndex = EditorGUILayout.Popup("体メッシュ", bodyIndex, names);
-        clothingIndex = EditorGUILayout.Popup("衣装メッシュ", clothingIndex, names);
-
-        threshold = EditorGUILayout.Slider("検出閾値(m)", threshold, 0.001f, 0.02f);
-        offset = EditorGUILayout.Slider("修正オフセット(m)", offset, 0.001f, 0.01f);
-
-        GUI.enabled = bodyIndex != clothingIndex && bodyIndex >= 0 && clothingIndex >= 0;
-        if (GUILayout.Button("貫通検出")) Detect();
-        GUI.enabled = true;
-
-        if (results.Count > 0)
-        {
-            EditorGUILayout.LabelField($"検出数: {results.Count}");
-            scroll = EditorGUILayout.BeginScrollView(scroll, GUILayout.Height(120));
-            foreach (var r in results)
-                EditorGUILayout.LabelField($"頂点{r.index} 深度{r.depth:F4}m");
-            EditorGUILayout.EndScrollView();
-
-            if (GUILayout.Button("自動修正")) AutoFix();
-        }
-        else
-        {
-            EditorGUILayout.HelpBox("貫通が検出されていません。", MessageType.Info);
-        }
-    }
-
-    void LoadMeshes()
-    {
-        rends = avatar.GetComponentsInChildren(true)
-            .Where(r => (r is SkinnedMeshRenderer smr && smr.sharedMesh != null) ||
-                        (r is MeshRenderer mr && mr.GetComponent()?.sharedMesh != null))
-            .ToArray();
-        meshCreators = rends.Select(r => new MeshCreater(r, avatar.transform)).ToArray();
-        bodyIndex = rends.Length > 0 ? 0 : -1;
-        clothingIndex = rends.Length > 1 ? 1 : -1;
-        results.Clear();
-    }
-
-    void Detect()
-    {
-        results.Clear();
-        if (meshCreators == null || bodyIndex ()?.sharedMesh != null)
-            {
-                var src = bmr.GetComponent().sharedMesh;
-                bodyMesh.vertices = src.vertices; bodyMesh.normals = src.normals; bodyMesh.triangles = src.triangles;
-            }
-            if (clothR is SkinnedMeshRenderer csmr) csmr.BakeMesh(clothMesh, true);
-            else if (clothR is MeshRenderer cmr && cmr.GetComponent()?.sharedMesh != null)
-            {
-                var src = cmr.GetComponent().sharedMesh;
-                clothMesh.vertices = src.vertices; clothMesh.normals = src.normals; clothMesh.triangles = src.triangles;
-            }
-
-            var bodyVerts = bodyMesh.vertices.Select(v => bodyR.transform.TransformPoint(v)).ToArray();
-            var bodyNorms = bodyMesh.normals.Select(n => bodyR.transform.TransformDirection(n).normalized).ToArray();
-            var clothVerts = clothMesh.vertices.Select(v => clothR.transform.TransformPoint(v)).ToArray();
-
-            for (int i = 0; i () != null)
-            mr.GetComponent().sharedMesh = updated;
-        results.Clear();
-        SceneView.RepaintAll();
-        Repaint();
-    }
 
     void OnEnable() => SceneView.duringSceneGui += OnSceneGUI;
     void OnDisable() => SceneView.duringSceneGui -= OnSceneGUI;
 
-    void OnSceneGUI(SceneView sceneView)
+    void OnGUI()
     {
-        if (results.Count == 0) return;
-        Handles.color = Color.red;
-        foreach (var r in results)
+        avatar = (GameObject)EditorGUILayout.ObjectField("アバター", avatar, typeof(GameObject), true);
+        if (GUILayout.Button("読込") && avatar != null)
         {
-            Handles.SphereHandleCap(0, r.worldPos, Quaternion.identity, HandleUtility.GetHandleSize(r.worldPos) * 0.02f, EventType.Repaint);
-            Handles.DrawLine(r.worldPos, r.worldPos + r.normal * 0.01f);
+            rends = avatar.GetComponentsInChildren<Renderer>(true)
+                .Where(r => (r is SkinnedMeshRenderer smr && smr.sharedMesh != null) ||
+                            (r is MeshRenderer mr && mr.GetComponent<MeshFilter>()?.sharedMesh != null)).ToArray();
+            bodyIdx = rends.Length > 0 ? 0 : -1;
+            clothIdx = rends.Length > 1 ? 1 : -1;
+            indices.Clear(); worldPos.Clear();
         }
+        if (rends == null || rends.Length < 2) return;
+        var names = rends.Select(r => r.name).ToArray();
+        bodyIdx = EditorGUILayout.Popup("体", bodyIdx, names);
+        clothIdx = EditorGUILayout.Popup("衣装", clothIdx, names);
+        thres = EditorGUILayout.Slider("閾値", thres, 0.001f, 0.02f);
+        offset = EditorGUILayout.Slider("オフセット", offset, 0.001f, 0.01f);
+
+        GUI.enabled = bodyIdx != clothIdx && bodyIdx >= 0 && clothIdx >= 0;
+        if (GUILayout.Button("検出")) Detect();
+        GUI.enabled = true;
+
+        if (indices.Count > 0)
+        {
+            EditorGUILayout.LabelField($"検出数: {indices.Count}");
+            scroll = EditorGUILayout.BeginScrollView(scroll, GUILayout.Height(80));
+            foreach (var i in indices) EditorGUILayout.LabelField($"頂点{i}");
+            EditorGUILayout.EndScrollView();
+            if (GUILayout.Button("自動修正")) AutoFix();
+        }
+    }
+
+    void Detect()
+    {
+        indices.Clear(); worldPos.Clear();
+        var br = rends[bodyIdx]; var cr = rends[clothIdx];
+        Mesh bm = new Mesh(), cm = new Mesh();
+        try
+        {
+            if (br is SkinnedMeshRenderer bsmr) bsmr.BakeMesh(bm, true);
+            else if (br is MeshRenderer bmr) bm = bmr.GetComponent<MeshFilter>().sharedMesh;
+            if (cr is SkinnedMeshRenderer csmr) csmr.BakeMesh(cm, true);
+            else if (cr is MeshRenderer cmr) cm = cmr.GetComponent<MeshFilter>().sharedMesh;
+            var bvs = bm.vertices.Select(v => br.transform.TransformPoint(v)).ToArray();
+            var bns = bm.normals.Select(n => br.transform.TransformDirection(n)).ToArray();
+            var cvs = cm.vertices.Select(v => cr.transform.TransformPoint(v)).ToArray();
+            for (int i = 0; i < bvs.Length; i++)
+                for (int j = 0; j < cvs.Length; j++)
+                    if ((bvs[i] - cvs[j]).magnitude < thres && Vector3.Dot(bns[i], (cvs[j] - bvs[i]).normalized) < -0.1f)
+                    { indices.Add(i); worldPos.Add(bvs[i]); break; }
+        }
+        finally { DestroyImmediate(bm); DestroyImmediate(cm); }
+        Repaint(); SceneView.RepaintAll();
+    }
+
+    void AutoFix()
+    {
+        var smr = rends[bodyIdx] as SkinnedMeshRenderer;
+        if (smr == null) return;
+        var mesh = Instantiate(smr.sharedMesh);
+        Undo.RecordObject(mesh, "Penetration AutoFix"); // Undo対応[2][4]
+        var verts = mesh.vertices;
+        var norms = mesh.normals;
+        foreach (var i in indices)
+            verts[i] += norms[i].normalized * offset;
+        mesh.vertices = verts;
+        mesh.vertices = mesh.vertices; // Undo反映のため再代入[4]
+        mesh.RecalculateBounds();
+        smr.sharedMesh = null;
+        smr.sharedMesh = mesh;
+        indices.Clear(); worldPos.Clear();
+        Repaint(); SceneView.RepaintAll();
+    }
+
+    void OnSceneGUI(SceneView s)
+    {
+        if (worldPos.Count == 0) return;
+        Handles.color = Color.red;
+        foreach (var p in worldPos)
+            Handles.SphereHandleCap(0, p, Quaternion.identity, HandleUtility.GetHandleSize(p) * 0.03f, EventType.Repaint);
     }
 }
 #endif
-```
-
----
-
-**使い方：**
-
-1. Unityメニュー「**Tools > MeshSyncPro > 貫通修正ツール**」を開く。
-2. アバター（GameObject）をセットし「メッシュ読込」。
-3. 「体メッシュ」「衣装メッシュ」を選択。
-4. 「貫通検出」ボタンで貫通箇所を検出。
-5. 必要に応じて「自動修正」ボタンで体メッシュの貫通頂点を自動で押し出し修正。
-
----
