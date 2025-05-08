@@ -109,10 +109,10 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 
-public class MeshSyncProUltimateRefined : EditorWindow
+public class MeshSyncPro : EditorWindow
 {
-    [MenuItem("Tools/MeshSyncPro Ultimate (Refined)")]
-    static void Open() => GetWindow("MeshSyncPro Ultimate");
+    [MenuItem("Tools/MeshSyncPro")]
+    static void Open() => GetWindow("MeshSyncPro");
 
     // --- UI Elements ---
     GameObject avatar;
@@ -164,7 +164,7 @@ public class MeshSyncProUltimateRefined : EditorWindow
     // --- GUI ---
     void OnGUI()
     {
-        EditorGUILayout.LabelField("MeshSyncPro Ultimate - 高品質貫通修正", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("MeshSyncPro", EditorStyles.boldLabel);
         GUILayout.Space(10);
 
         EditorGUI.BeginChangeCheck();
