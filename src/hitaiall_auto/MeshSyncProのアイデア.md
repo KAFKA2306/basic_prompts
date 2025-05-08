@@ -1,5 +1,5 @@
 ## MeshSyncPro
-名称は、MeshSyncProで統一してください。
+名称は、MeshSyncProで統一する
 ### 1. 概要
 
 **1.1. 目的**  
