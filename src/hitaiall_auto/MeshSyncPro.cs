@@ -4,10 +4,10 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 
-public class MeshSyncProMini : EditorWindow
+public class MeshSyncPro : EditorWindow
 {
-    [MenuItem("Tools/MeshSyncProMini")]
-    static void Open() => GetWindow<MeshSyncProMini>("MeshSyncProMini");
+    [MenuItem("Tools/MeshSyncPro")]
+    static void Open() => GetWindow<MeshSyncPro>("MeshSyncPro");
     GameObject avatar; Renderer[] rends;
     int bodyIdx = -1, clothIdx = -1;
     float thres = 0.005f, offset = 0.003f;
