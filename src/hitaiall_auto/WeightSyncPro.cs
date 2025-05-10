@@ -121,6 +121,4 @@ public class WeightSyncProWindow : EditorWindow
     }
 }
 
-// --- ボーンマッピング/ウェイト転送コアはWeightSyncPro.cs内に既に実装済み ---
-// BoneMappingCore, WeightTransferCore も同ファイル内に存在
 #endif
