@@ -718,4 +718,3 @@ namespace HhotateA.WeightSyncPro
         }
     }
 }
-
